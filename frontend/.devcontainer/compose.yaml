@@ -1,0 +1,18 @@
+services:
+  frontend:
+    container_name: scm-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sleep infinity
+    env_file: ../../.env
+    volumes:
+      - ..:/workspace:Z
+    ports:
+      - "3000:3000"
+    networks:
+      - scm-net
+
+networks:
+  scm-net:
+    external: true

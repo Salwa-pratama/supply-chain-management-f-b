@@ -1,0 +1,19 @@
+{
+  "name": "SCM Frontend (Next.js)",
+  "initializeCommand": "podman network inspect scm-net >/dev/null 2>&1 || podman network create scm-net",
+  "dockerComposeFile": "compose.yaml",
+  "service": "frontend",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "root",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      // Customization extention container for develop
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  }
+}

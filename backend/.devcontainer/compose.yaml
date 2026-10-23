@@ -1,0 +1,18 @@
+services:
+  backend:
+    container_name: scm-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sleep infinity
+    env_file: ../../.env
+    volumes:
+      - ..:/workspace:z
+    ports:
+      - "3001:3001"
+    networks:
+      - scm-net
+
+networks:
+  scm-net:
+    external: true

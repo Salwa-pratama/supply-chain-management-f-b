@@ -1,0 +1,14 @@
+{
+  "name": "SCM Backend (NestJS)",
+  "initializeCommand": "podman network inspect scm-net >/dev/null 2>&1 || podman network create scm-net",
+  "dockerComposeFile": "compose.yaml",
+  "service": "backend",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "root",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+    }
+  }
+}
