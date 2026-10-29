@@ -5,13 +5,56 @@ services:
       context: .
       dockerfile: Dockerfile
     command: sleep infinity
-    env_file: ../../.env
+    env_file:
+      - ../.env
     volumes:
       - ..:/workspace:z
     ports:
       - "3001:3001"
+    depends_on:
+      - mysql
     networks:
       - scm-net
+
+  mysql:
+    container_name: scm-mysql
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: scm_db
+      MYSQL_USER: scm_user
+      MYSQL_PASSWORD: scm_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql:z
+    networks:
+      - scm-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  phpmyadmin:
+    container_name: scm-phpmyadmin
+    image: phpmyadmin:latest
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - scm-net
+
+volumes:
+  mysql-data:
 
 networks:
   scm-net:

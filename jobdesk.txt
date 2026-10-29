@@ -1,0 +1,15 @@
+Role pengembangan SCM F&B : 
+Team Frontend : 
+1. Ahmad        (Design)
+2. Ibnu        (Koding) 
+Team Backend : 
+1. Indana     (Database)
+2. Salwa    (Koding)
+
+Tech Stack : 
+- NextJS (Front END) 
+- NestJS (Backend)
+- Supabase (Database) 
+- Eraser.io ( Desain database)
+- Draw.io (Desain Sistem)
+- Trello untuk Manajemen Tugas

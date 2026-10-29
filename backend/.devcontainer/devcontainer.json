@@ -1,14 +1,31 @@
 {
   "name": "SCM Backend (NestJS)",
-  "initializeCommand": "podman network inspect scm-net >/dev/null 2>&1 || podman network create scm-net",
+  "initializeCommand": "podman network inspect scm-net >/dev/null 2>&1 || docker network inspect scm-net >/dev/null 2>&1 || podman network create scm-net 2>/dev/null || docker network create scm-net 2>/dev/null || true",
   "dockerComposeFile": "compose.yaml",
   "service": "backend",
   "workspaceFolder": "/workspace",
   "remoteUser": "root",
   "shutdownAction": "stopCompose",
+  "forwardPorts": [3001, 3306, 8080],
+  "portsAttributes": {
+    "3001": {
+      "label": "NestJS Application"
+    },
+    "3306": {
+      "label": "MySQL Database",
+      "onAutoForward": "silent"
+    },
+    "8080": {
+      "label": "phpMyAdmin"
+    }
+  },
   "customizations": {
     "vscode": {
-      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma"
+      ]
     }
   }
 }
