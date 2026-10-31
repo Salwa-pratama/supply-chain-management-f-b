@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useRegister } from "@/features/auth/hooks/use-register";
 
 type Role = "merchant" | "supplier";
-type Status = "idle" | "loading" | "success";
 
 const ROLE_COPY: Record<Role, { label: string; placeholder: string; nama: string }> = {
   merchant: {
@@ -68,28 +69,47 @@ export default function RegisterForm() {
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const [status, setStatus] = useState<Status>("idle");
+  const router = useRouter();
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const registerMutation = useRegister({
+    onSuccess: (data) => {
+      setSuccessMessage(
+        `Akun ${data.user.name} berhasil dibuat! Mengalihkan ke halaman login...`
+      );
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+    },
+    onError: (err) => {
+      setError(err.message || "Gagal melakukan registrasi");
+    },
+  });
 
   const copy = ROLE_COPY[role];
   const kuat = nilaiKekuatan(password);
 
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (password !== confirm) {
       setError("Konfirmasi kata sandi tidak cocok. Harap periksa kembali.");
       return;
     }
     setError("");
-    setStatus("loading");
-    // TODO: ganti dengan pemanggilan API backend (Go), misalnya POST /auth/register
-    // dengan { role, fullName, businessName, category, email, whatsapp: "+62" + whatsapp, password }.
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setStatus("success");
+
+    const backendRole = role === "supplier" ? "pemasok" : "owner";
+    registerMutation.mutate({
+      name: fullName.trim() || businessName.trim(),
+      email: email.trim(),
+      password: password.trim(),
+      role: backendRole,
+    });
   }
 
-  const isLoading = status === "loading";
-  const isSuccess = status === "success";
+  const isLoading = registerMutation.isPending;
+  const isSuccess = registerMutation.isSuccess;
+  const activeError = error || registerMutation.error?.message;
 
   return (
     <div className="bg-surface-container-lowest p-6 sm:p-8 md:p-10 rounded-2xl border border-[rgba(148,185,169,0.35)] shadow-[0_4px_20px_-2px_rgba(23,32,51,0.06)]">
@@ -176,15 +196,15 @@ export default function RegisterForm() {
       </div>
 
       {/* Pesan error / sukses */}
-      {error && (
+      {activeError && (
         <div
           role="alert"
           className="mb-5 flex items-start gap-3 p-4 rounded-[16px] bg-[#FDF2F2] border border-[#B54747]/30 text-[#B54747]"
         >
           <span className="material-symbols-outlined text-xl mt-0.5">error</span>
           <div className="flex-1">
-            <p className="font-label-md text-label-md font-bold">Pendaftaran Belum Bisa Dikirim</p>
-            <p className="font-body-sm text-body-sm mt-0.5">{error}</p>
+            <p className="font-label-md text-label-md font-bold">Pendaftaran Gagal</p>
+            <p className="font-body-sm text-body-sm mt-0.5">{activeError}</p>
           </div>
         </div>
       )}
@@ -200,14 +220,17 @@ export default function RegisterForm() {
             verified
           </span>
           <div className="flex-1">
-            <p className="font-label-md text-label-md font-bold">Pendaftaran Berhasil Dikirim!</p>
+            <p className="font-label-md text-label-md font-bold">Pendaftaran Berhasil!</p>
             <p className="font-body-sm text-body-sm mt-0.5">
-              Pendaftaran sebagai {copy.nama} sudah diterima. Silakan periksa WhatsApp untuk kode verifikasi
-              OTP, lalu{" "}
-              <Link href="/login" className="font-bold underline underline-offset-2">
-                masuk ke akun Anda
-              </Link>
-              .
+              {successMessage || (
+                <>
+                  Pendaftaran sebagai {copy.nama} sudah diterima. Silakan{" "}
+                  <Link href="/login" className="font-bold underline underline-offset-2">
+                    masuk ke akun Anda
+                  </Link>
+                  .
+                </>
+              )}
             </p>
           </div>
         </div>

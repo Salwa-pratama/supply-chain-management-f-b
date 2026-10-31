@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   description: "Platform supply chain management untuk bisnis F&B",
 };
 
+import QueryProvider from "@/providers/query-provider";
+
 export default function RootLayout({
   children,
 }: {
@@ -22,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="id" className={jakarta.variable}>
       <body className="bg-[#F5F8F6] text-on-surface font-body-md text-body-md antialiased">
-        {children}
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );

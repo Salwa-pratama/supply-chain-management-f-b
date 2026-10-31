@@ -4,37 +4,53 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
-import { cariAkun } from "@/lib/demo-accounts";
 import SiteFooter from "@/components/site/SiteFooter";
-
-type Status = "idle" | "error" | "loading" | "success";
+import { useLogin } from "@/features/auth/hooks/use-login";
 
 // Tujuan setelah login berhasil, berdasarkan peran dari backend.
-// Peran lain (pemasok, kasir, konsumen) ditambahkan saat halamannya selesai dibuat.
 const ROLE_REDIRECT: Record<string, string> = {
   super_admin: "/admin/dashboard",
-  pemilik: "/pemilik/monitoring", // ganti ke /pemilik/dashboard setelah Paket 3
+  pemilik: "/pemilik/monitoring",
+  owner: "/pemilik/monitoring",
+  manajer_gudang: "/pemilik/monitoring",
+  pemasok: "/portal",
+  kasir: "/pemilik/monitoring",
 };
 const DEFAULT_REDIRECT = "/pemilik/monitoring";
 
 // Jeda agar pesan "Verifikasi Berhasil!" sempat terbaca sebelum pindah halaman.
-const REDIRECT_DELAY_MS = 1500;
+const REDIRECT_DELAY_MS = 1200;
 
 export default function LoginPage() {
+  const router = useRouter();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const router = useRouter();
-  const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState({ identifier: false, password: false });
-  const [alertMessage, setAlertMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const isLoading = status === "loading";
-  const isSuccess = status === "success";
+  const loginMutation = useLogin({
+    onSuccess: (data) => {
+      setSuccessMessage(
+        `Selamat datang kembali, ${data.user.name}! Mengalihkan ke dashboard...`
+      );
+      const role = data.user.role;
+      setTimeout(() => {
+        router.push(ROLE_REDIRECT[role] ?? DEFAULT_REDIRECT);
+      }, REDIRECT_DELAY_MS);
+    },
+  });
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const isLoading = loginMutation.isPending;
+  const isSuccess = loginMutation.isSuccess;
+  const isError = loginMutation.isError;
+  const errorMessage =
+    loginMutation.error?.message ||
+    "Email atau kata sandi tidak cocok dengan data terdaftar di sistem BAPER.";
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     // 1. Validasi field kosong
@@ -44,40 +60,15 @@ export default function LoginPage() {
     };
     setErrors(nextErrors);
     if (nextErrors.identifier || nextErrors.password) {
-      setStatus("idle");
       return;
     }
 
-    // 2. Kirim ke backend
-    setStatus("loading");
-    setAlertMessage("");
-    try {
-      // TODO: ganti simulasi ini dengan pemanggilan API backend (Go), misalnya:
-      // const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ identifier, password, remember }),
-      // });
-      // if (!res.ok) throw new Error("Kredensial tidak sesuai");
-      // const { role } = await res.json();
-      // router.push(ROLE_REDIRECT[role]);  // konsumen -> /portal, pemilik -> /pemilik/dashboard, dst.
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-
-      // AKUN UJI (hapus saat API siap): cocokkan dengan lib/demo-accounts.ts.
-      // Dengan API sungguhan, `role` diambil dari respons backend.
-      const akun = cariAkun(identifier, password);
-      if (!akun) throw new Error("Kredensial tidak sesuai");
-      const role = akun.role;
-
-      setStatus("success"); // tampilkan kotak "Verifikasi Berhasil!"
-      await new Promise((resolve) => setTimeout(resolve, REDIRECT_DELAY_MS));
-      router.push(ROLE_REDIRECT[role] ?? DEFAULT_REDIRECT);
-    } catch {
-      setStatus("error");
-      setAlertMessage(
-        "Email atau kata sandi tidak cocok dengan data terdaftar di sistem BAPER."
-      );
-    }
+    // 2. Kirim data via TanStack Query mutation
+    loginMutation.mutate({
+      email: identifier.trim(),
+      password: password.trim(),
+      remember,
+    });
   }
 
   // Kelas input: normal vs error
@@ -108,8 +99,8 @@ export default function LoginPage() {
           <nav className="hidden md:flex items-center space-x-8">
             {[
               { label: "Fitur Solusi", href: "/#fitur" },
-              { label: "Harga & Paket", href: "#" }, // TODO: bagian harga belum ada di landing
-              { label: "Bantuan", href: "#" }, // TODO: halaman bantuan belum dibuat
+              { label: "Harga & Paket", href: "#" },
+              { label: "Bantuan", href: "#" },
             ].map(({ label, href }) => (
               <Link
                 key={label}
@@ -160,8 +151,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Alert error / sukses */}
-            {status === "error" && (
+            {/* Alert error / sukses TanStack Query */}
+            {isError && (
               <div className="mb-6">
                 <div
                   role="alert"
@@ -172,16 +163,16 @@ export default function LoginPage() {
                   </span>
                   <div className="flex-1">
                     <p className="font-label-md text-label-md font-bold">
-                      Kredensial Tidak Sesuai
+                      Gagal Masuk
                     </p>
                     <p className="font-body-sm text-body-sm mt-0.5">
-                      {alertMessage}
+                      {errorMessage}
                     </p>
                   </div>
                 </div>
               </div>
             )}
-            {status === "success" && (
+            {isSuccess && (
               <div className="mb-6">
                 <div
                   role="status"
@@ -195,11 +186,10 @@ export default function LoginPage() {
                   </span>
                   <div className="flex-1">
                     <p className="font-label-md text-label-md font-bold">
-                      Verifikasi Berhasil!
+                      Login Berhasil!
                     </p>
                     <p className="font-body-sm text-body-sm mt-0.5">
-                      Mengarahkan Anda ke Dashboard BAPER dalam hitungan
-                      detik...
+                      {successMessage || "Mengarahkan Anda ke Dashboard..."}
                     </p>
                   </div>
                 </div>
