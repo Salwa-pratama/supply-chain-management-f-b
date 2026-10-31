@@ -1,0 +1,229 @@
+title Baper Entity Relationship Diagram
+// ===== Akun & Bisnis =====
+User [color: blue] {
+  ID string pk
+  Email string
+  PasswordHash string
+  Name string
+  Role string // super_admin, owner, manajer_gudang, kasir, pemasok
+  IsActive boolean
+  CreatedAt timestamp
+  UpdatedAt timestamp
+}
+
+AuthToken [color: blue] {
+  ID string pk
+  UserID string fk
+  Token string
+  ExpiresAt timestamp
+}
+
+Business [color: blue] {
+  ID string pk
+  UserID string fk
+  Name string
+  Category string
+  Description string
+  Address string
+  PhoneBusiness string
+  CreatedAt timestamp
+}
+
+BusinessMember [color: blue] {
+  ID string pk
+  BusinessID string fk
+  UserID string fk
+  Role string // manajer_gudang, kasir
+  IsActive boolean
+  CreatedAt timestamp
+}
+
+// ===== Bot & Chat =====
+Bot [color: green] {
+  ID string pk
+  BusinessID string fk
+  Name string
+  WaNumber string
+  WaStatus string
+  AgentPrompt string
+  AgentAPI string
+  IsActive boolean
+}
+
+Customer [color: green] {
+  ID string pk
+  BusinessID string fk
+  WaPhoneNumber string
+  Name string
+  Address string
+  IsBlocked boolean
+}
+
+ChatSession [color: green] {
+  ID string pk
+  BotID string fk
+  CustomerID string fk
+  StartedAt timestamp
+  EndedAt timestamp
+  Status string
+}
+
+Message [color: green] {
+  ID string pk
+  SessionID string fk
+  SenderType string
+  Content string
+  Metadata json
+  IsRead boolean
+  CreatedAt timestamp
+}
+
+// ===== Penjualan =====
+Product [color: orange] {
+  ID string pk
+  BusinessID string fk
+  Name string
+  Description string
+  Price decimal
+  Category string
+  IsAvailable boolean
+}
+
+Order [color: orange] {
+  ID string pk
+  BusinessID string fk
+  CustomerID string fk // nullable
+  SessionID string fk // nullable
+  CreatedByID string fk // kasir, nullable
+  Source string // whatsapp / kasir
+  TotalAmount decimal
+  Status string
+  CreatedAt timestamp
+}
+
+OrderItem [color: orange] {
+  ID string pk
+  OrderID string fk
+  ProductID string fk
+  Quantity int
+  Price decimal
+}
+
+// ===== Gudang & Stok =====
+Ingredient [color: purple] {
+  ID string pk
+  BusinessID string fk
+  PreferredSupplierID string fk // nullable
+  Name string
+  Unit string
+  Stock decimal
+  MinStock decimal
+  Category string
+}
+
+ProductIngredient [color: purple] {
+  ID string pk
+  ProductID string fk
+  IngredientID string fk
+  QtyPerUnit decimal
+}
+
+StockMovement [color: purple] {
+  ID string pk
+  IngredientID string fk
+  CreatedByID string fk
+  Type string // in / out / adjust
+  Qty decimal
+  ReferenceID string
+  CreatedAt timestamp
+}
+
+// ===== Pemasok & Restock =====
+Supplier [color: red] {
+  ID string pk
+  UserID string fk
+  Name string
+  Category string
+  Phone string
+  Address string
+  IsActive boolean
+}
+
+BusinessSupplier [color: red] {
+  ID string pk
+  BusinessID string fk
+  SupplierID string fk
+  Status string
+}
+
+SupplierItem [color: red] {
+  ID string pk
+  SupplierID string fk
+  Name string
+  Unit string
+  Price decimal
+  IsAvailable boolean
+  StockQty decimal
+}
+
+PurchaseOrder [color: red] {
+  ID string pk
+  BusinessID string fk
+  SupplierID string fk
+  CreatedByID string fk
+  Status string // draft, sent, confirmed, shipped, received, cancelled
+  TotalAmount decimal
+  CreatedAt timestamp
+}
+
+PurchaseOrderItem [color: red] {
+  ID string pk
+  PurchaseOrderID string fk
+  SupplierItemID string fk
+  IngredientID string fk
+  Quantity decimal
+  Price decimal
+}
+
+// ===== Relasi =====
+// Akun & Bisnis
+User.ID < AuthToken.UserID
+User.ID - Business.UserID
+User.ID < BusinessMember.UserID
+User.ID - Supplier.UserID
+Business.ID < BusinessMember.BusinessID
+
+// Bot & Chat
+Business.ID - Bot.BusinessID
+Business.ID < Customer.BusinessID
+Bot.ID < ChatSession.BotID
+Customer.ID < ChatSession.CustomerID
+ChatSession.ID < Message.SessionID
+ChatSession.ID - Order.SessionID
+
+// Penjualan
+Business.ID < Product.BusinessID
+Business.ID < Order.BusinessID
+Customer.ID < Order.CustomerID
+User.ID < Order.CreatedByID
+Order.ID < OrderItem.OrderID
+Product.ID < OrderItem.ProductID
+
+// Gudang & Stok
+Business.ID < Ingredient.BusinessID
+Product.ID < ProductIngredient.ProductID
+Ingredient.ID < ProductIngredient.IngredientID
+Ingredient.ID < StockMovement.IngredientID
+User.ID < StockMovement.CreatedByID
+
+// Pemasok & Restock
+Business.ID < BusinessSupplier.BusinessID
+Supplier.ID < BusinessSupplier.SupplierID
+Supplier.ID < SupplierItem.SupplierID
+Supplier.ID < Ingredient.PreferredSupplierID
+Business.ID < PurchaseOrder.BusinessID
+Supplier.ID < PurchaseOrder.SupplierID
+User.ID < PurchaseOrder.CreatedByID
+PurchaseOrder.ID < PurchaseOrderItem.PurchaseOrderID
+SupplierItem.ID < PurchaseOrderItem.SupplierItemID
+Ingredient.ID < PurchaseOrderItem.IngredientID

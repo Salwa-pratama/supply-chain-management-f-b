@@ -100,7 +100,10 @@ export default function RegisterForm() {
 
     const backendRole = role === "supplier" ? "pemasok" : "owner";
     registerMutation.mutate({
-      name: fullName.trim() || businessName.trim(),
+      name: fullName.trim(),
+      businessName: businessName.trim(),
+      category: category || undefined,
+      whatsapp: whatsapp.trim() || undefined,
       email: email.trim(),
       password: password.trim(),
       role: backendRole,
@@ -326,9 +329,6 @@ export default function RegisterForm() {
             <label className="block text-label-md font-label-md text-on-surface" htmlFor="whatsapp_number">
               Nomor WhatsApp Aktif <Req />
             </label>
-            <span className="text-label-sm font-label-sm text-primary flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">chat</span> Integrasi Bot BAPER
-            </span>
           </div>
           <div className="relative flex items-center">
             <span className="absolute left-4 font-label-md text-label-md flex items-center gap-1 select-none text-secondary">

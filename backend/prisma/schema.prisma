@@ -52,6 +52,7 @@ model Business {
   id            String   @id @default(uuid())
   userId        String   @map("user_id")
   name          String
+  category      String?
   description   String?  @db.Text
   address       String?  @db.Text
   phoneBusiness String?  @map("phone_business")

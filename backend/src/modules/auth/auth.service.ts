@@ -20,8 +20,9 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    const email = dto.email.toLowerCase();
     const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
+      where: { email },
     });
 
     if (existingUser) {
@@ -30,55 +31,92 @@ export class AuthService {
 
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(dto.password, saltRounds);
+    const assignedRole = dto.role || 'owner';
+    const businessTitle = dto.businessName?.trim() || `${dto.name} Bisnis`;
 
     try {
-      const user = await this.prisma.user.create({
-        data: {
-          email: dto.email.toLowerCase(),
-          passwordHash,
-          name: dto.name,
-          role: dto.role || 'owner',
-          isActive: true,
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          isActive: true,
-          createdAt: true,
-        },
+      return await this.prisma.$transaction(async (tx) => {
+        // 1. Buat akun pengguna
+        const user = await tx.user.create({
+          data: {
+            email,
+            passwordHash,
+            name: dto.name,
+            role: assignedRole,
+            isActive: true,
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            isActive: true,
+            createdAt: true,
+          },
+        });
+
+        let businessData = null;
+        let supplierData = null;
+
+        // 2. Jika Owner F&B: Otomatis buat entitas Business
+        if (assignedRole === 'owner') {
+          businessData = await tx.business.create({
+            data: {
+              userId: user.id,
+              name: businessTitle,
+              category: dto.category || null,
+              phoneBusiness: dto.whatsapp || null,
+            },
+          });
+        }
+
+        // 3. Jika Pemasok: Otomatis buat entitas Supplier
+        if (assignedRole === 'pemasok') {
+          supplierData = await tx.supplier.create({
+            data: {
+              userId: user.id,
+              name: businessTitle,
+              category: dto.category || null,
+              phone: dto.whatsapp || null,
+              isActive: true,
+            },
+          });
+        }
+
+        // 4. Generate JWT token akses
+        const tokenPayload: JwtPayload = {
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+        };
+
+        const accessToken = this.jwtService.sign(tokenPayload);
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 1);
+
+        await tx.authToken.create({
+          data: {
+            userId: user.id,
+            token: accessToken,
+            expiresAt,
+          },
+        });
+
+        return {
+          user,
+          business: businessData,
+          supplier: supplierData,
+          accessToken,
+        };
       });
-
-      const tokenPayload: JwtPayload = {
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-      };
-
-      const accessToken = this.jwtService.sign(tokenPayload);
-
-      // Catat auth token ke database
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 1); // 1 hari
-
-      await this.prisma.authToken.create({
-        data: {
-          userId: user.id,
-          token: accessToken,
-          expiresAt,
-        },
-      });
-
-      return {
-        user,
-        accessToken,
-      };
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;
       }
-      throw new InternalServerErrorException('Gagal membuat akun');
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : 'Gagal membuat akun',
+      );
     }
   }
 

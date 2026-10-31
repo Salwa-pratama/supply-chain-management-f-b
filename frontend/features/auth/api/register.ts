@@ -9,6 +9,9 @@ export async function registerApi(payload: RegisterPayload): Promise<AuthRespons
       email: payload.email,
       password: payload.password,
       role: payload.role || "owner",
+      businessName: payload.businessName,
+      category: payload.category,
+      whatsapp: payload.whatsapp,
     }),
   });
 }
