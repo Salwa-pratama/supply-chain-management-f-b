@@ -2,9 +2,23 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
+import { cariAkun } from "@/lib/demo-accounts";
+import SiteFooter from "@/components/site/SiteFooter";
 
 type Status = "idle" | "error" | "loading" | "success";
+
+// Tujuan setelah login berhasil, berdasarkan peran dari backend.
+// Peran lain (pemasok, kasir, konsumen) ditambahkan saat halamannya selesai dibuat.
+const ROLE_REDIRECT: Record<string, string> = {
+  super_admin: "/admin/dashboard",
+  pemilik: "/pemilik/monitoring", // ganti ke /pemilik/dashboard setelah Paket 3
+};
+const DEFAULT_REDIRECT = "/pemilik/monitoring";
+
+// Jeda agar pesan "Verifikasi Berhasil!" sempat terbaca sebelum pindah halaman.
+const REDIRECT_DELAY_MS = 1500;
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
@@ -12,11 +26,13 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const router = useRouter();
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState({ identifier: false, password: false });
   const [alertMessage, setAlertMessage] = useState("");
 
   const isLoading = status === "loading";
+  const isSuccess = status === "success";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,7 +62,16 @@ export default function LoginPage() {
       // const { role } = await res.json();
       // router.push(ROLE_REDIRECT[role]);  // konsumen -> /portal, pemilik -> /pemilik/dashboard, dst.
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      setStatus("success");
+
+      // AKUN UJI (hapus saat API siap): cocokkan dengan lib/demo-accounts.ts.
+      // Dengan API sungguhan, `role` diambil dari respons backend.
+      const akun = cariAkun(identifier, password);
+      if (!akun) throw new Error("Kredensial tidak sesuai");
+      const role = akun.role;
+
+      setStatus("success"); // tampilkan kotak "Verifikasi Berhasil!"
+      await new Promise((resolve) => setTimeout(resolve, REDIRECT_DELAY_MS));
+      router.push(ROLE_REDIRECT[role] ?? DEFAULT_REDIRECT);
     } catch {
       setStatus("error");
       setAlertMessage(
@@ -69,7 +94,7 @@ export default function LoginPage() {
       <header className="w-full sticky top-0 z-50 bg-surface-container-lowest shadow-sm">
         <div className="w-full flex items-center justify-between px-8 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-6">
-            <Link href="/login" className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3">
               <Logo className="h-9 w-auto" />
             </Link>
             <div className="hidden lg:flex items-center pl-4 border-l border-outline-variant/40">
@@ -81,10 +106,14 @@ export default function LoginPage() {
           </div>
 
           <nav className="hidden md:flex items-center space-x-8">
-            {["Fitur Solusi", "Harga & Paket", "Bantuan"].map((label) => (
+            {[
+              { label: "Fitur Solusi", href: "/#fitur" },
+              { label: "Harga & Paket", href: "#" }, // TODO: bagian harga belum ada di landing
+              { label: "Bantuan", href: "#" }, // TODO: halaman bantuan belum dibuat
+            ].map(({ label, href }) => (
               <Link
                 key={label}
-                href="#"
+                href={href}
                 className="font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors duration-150"
               >
                 {label}
@@ -100,7 +129,7 @@ export default function LoginPage() {
               Hubungi Sales
             </Link>
             <Link
-              href="#"
+              href="/daftar"
               className="inline-flex items-center justify-center font-label-lg text-label-lg text-white bg-primary-container hover:bg-[#0D6038] px-5 py-2.5 rounded-[14px] transition duration-150 shadow-sm active:scale-[0.99]"
             >
               Daftar Akun Baru
@@ -282,12 +311,12 @@ export default function LoginPage() {
               {/* Tombol masuk */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isSuccess}
                 className={`w-full h-12 bg-[#137A48] hover:bg-[#0D6038] text-white font-label-lg text-label-lg rounded-[16px] shadow-sm flex items-center justify-center gap-2 transition duration-150 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#137A48]/30 ${
-                  isLoading ? "opacity-75 cursor-not-allowed" : ""
+                  isLoading || isSuccess ? "opacity-75 cursor-not-allowed" : ""
                 }`}
               >
-                <span>{isLoading ? "Memverifikasi..." : "Masuk ke Akun"}</span>
+                <span>{isLoading ? "Memverifikasi..." : isSuccess ? "Mengarahkan..." : "Masuk ke Akun"}</span>
                 {isLoading ? (
                   <svg
                     className="animate-spin h-5 w-5 text-white"
@@ -356,7 +385,7 @@ export default function LoginPage() {
               <p className="font-body-md text-body-md text-[#7B8794]">
                 Belum punya akun toko?{" "}
                 <Link
-                  href="#"
+                  href="/daftar"
                   className="font-semibold text-[#137A48] hover:underline focus:outline-none"
                 >
                   Daftar sekarang
@@ -367,35 +396,7 @@ export default function LoginPage() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="w-full bg-surface-container-lowest border-t border-[#94B9A9]/20 mt-8">
-        <div className="w-full py-8 px-8 max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="font-headline-sm text-headline-sm font-bold text-primary">
-              BAPER
-            </span>
-            <span className="text-on-surface-variant font-label-sm text-label-sm">
-              © 2025 BAPER (Bantu Pesan dan Rekap). Hak Cipta Dilindungi.
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-6">
-            {[
-              "Syarat & Ketentuan",
-              "Kebijakan Privasi",
-              "Keamanan Transaksi",
-              "Status Sistem",
-            ].map((label) => (
-              <Link
-                key={label}
-                href="#"
-                className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors duration-150"
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
