@@ -22,8 +22,32 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={jakarta.variable}>
-      <body className="bg-[#F5F8F6] text-on-surface font-body-md text-body-md antialiased">
+    <html lang="id" className={jakarta.variable} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window !== 'undefined') {
+                  var origError = console.error;
+                  console.error = function() {
+                    for (var i = 0; i < arguments.length; i++) {
+                      if (typeof arguments[i] === 'string' && arguments[i].indexOf('bis_skin_checked') !== -1) {
+                        return;
+                      }
+                    }
+                    origError.apply(console, arguments);
+                  };
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body
+        className="bg-[#F5F8F6] text-on-surface font-body-md text-body-md antialiased"
+        suppressHydrationWarning
+      >
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>

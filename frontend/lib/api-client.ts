@@ -10,8 +10,14 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+function getBaseUrl(): string {
+  let url = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").trim().replace(/\/$/, "");
+  // Pastikan selalu menuju prefix /api/v1 dari NestJS
+  if (!url.endsWith("/api/v1") && !url.includes("/api/")) {
+    url += "/api/v1";
+  }
+  return url;
+}
 
 interface RequestOptions extends RequestInit {
   token?: string;
@@ -28,9 +34,10 @@ export async function apiClient<T>(
 ): Promise<T> {
   const { token, headers: customHeaders, ...restOptions } = options;
 
+  const baseUrl = getBaseUrl();
   const url = endpoint.startsWith("http")
     ? endpoint
-    : `${API_BASE_URL.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
+    : `${baseUrl}/${endpoint.replace(/^\//, "")}`;
 
   // Ambil token dari parameter atau localStorage jika di browser
   const activeToken =

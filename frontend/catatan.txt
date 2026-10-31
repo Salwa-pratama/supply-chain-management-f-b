@@ -1,0 +1,11 @@
+URL login yang tersedia kali ini ada 
+
+const ROLE_REDIRECT: Record<string, string> = {
+  super_admin: "/admin/dashboard",
+  pemilik: "/pemilik/monitoring",
+  owner: "/pemilik/monitoring",
+  manajer_gudang: "/pemilik/monitoring",
+  pemasok: "/portal",
+  kasir: "/pemilik/monitoring",
+};
+const DEFAULT_REDIRECT = "/pemilik/monitoring";

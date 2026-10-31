@@ -7,7 +7,10 @@ import { useRegister } from "@/features/auth/hooks/use-register";
 
 type Role = "merchant" | "supplier";
 
-const ROLE_COPY: Record<Role, { label: string; placeholder: string; nama: string }> = {
+const ROLE_COPY: Record<
+  Role,
+  { label: string; placeholder: string; nama: string }
+> = {
   merchant: {
     label: "Nama Usaha / Brand F&B",
     placeholder: "Contoh: Kopi Cerita Jiwa",
@@ -22,7 +25,8 @@ const ROLE_COPY: Record<Role, { label: string; placeholder: string; nama: string
 
 const ROLE_BTN =
   "flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-label-lg font-label-lg transition-all duration-150";
-const ROLE_ACTIVE = "bg-surface-container-lowest text-primary shadow-sm ring-1 ring-primary/10";
+const ROLE_ACTIVE =
+  "bg-surface-container-lowest text-primary shadow-sm ring-1 ring-primary/10";
 const ROLE_IDLE = "text-on-surface-variant hover:text-primary";
 
 const INPUT =
@@ -40,16 +44,35 @@ const KATEGORI = [
 
 // Kekuatan kata sandi: 0 = kosong, 1-4 = lemah sampai sangat kuat
 function nilaiKekuatan(pw: string) {
-  if (!pw) return { level: 0, label: "Belum terisi", text: "text-outline", bar: "" };
+  if (!pw)
+    return { level: 0, label: "Belum terisi", text: "text-outline", bar: "" };
   let skor = 0;
   if (pw.length >= 8) skor++;
   if (/[A-Z]/.test(pw)) skor++;
   if (/[0-9]/.test(pw)) skor++;
   if (/[^A-Za-z0-9]/.test(pw)) skor++;
-  if (skor <= 1) return { level: 1, label: "Lemah", text: "text-error", bar: "bg-error" };
-  if (skor === 2) return { level: 2, label: "Cukup", text: "text-[#B7791F]", bar: "bg-[#B7791F]" };
-  if (skor === 3) return { level: 3, label: "Baik", text: "text-secondary", bar: "bg-secondary" };
-  return { level: 4, label: "Sangat Kuat", text: "text-primary", bar: "bg-primary" };
+  if (skor <= 1)
+    return { level: 1, label: "Lemah", text: "text-error", bar: "bg-error" };
+  if (skor === 2)
+    return {
+      level: 2,
+      label: "Cukup",
+      text: "text-[#B7791F]",
+      bar: "bg-[#B7791F]",
+    };
+  if (skor === 3)
+    return {
+      level: 3,
+      label: "Baik",
+      text: "text-secondary",
+      bar: "bg-secondary",
+    };
+  return {
+    level: 4,
+    label: "Sangat Kuat",
+    text: "text-primary",
+    bar: "bg-primary",
+  };
 }
 
 function Req() {
@@ -76,7 +99,7 @@ export default function RegisterForm() {
   const registerMutation = useRegister({
     onSuccess: (data) => {
       setSuccessMessage(
-        `Akun ${data.user.name} berhasil dibuat! Mengalihkan ke halaman login...`
+        `Akun ${data.user.name} berhasil dibuat! Mengalihkan ke halaman login...`,
       );
       setTimeout(() => {
         router.push("/login");
@@ -160,7 +183,9 @@ export default function RegisterForm() {
 
       {/* Pilihan peran */}
       <div className="mb-6">
-        <span className="block text-label-md font-label-md text-on-surface mb-2">Tipe Akun Pengguna</span>
+        <span className="block text-label-md font-label-md text-on-surface mb-2">
+          Tipe Akun Pengguna
+        </span>
         <div
           className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1.5 bg-[#E8F3EC] rounded-2xl border border-[rgba(148,185,169,0.35)]"
           role="tablist"
@@ -172,9 +197,13 @@ export default function RegisterForm() {
             onClick={() => setRole("merchant")}
             className={`${ROLE_BTN} ${role === "merchant" ? ROLE_ACTIVE : ROLE_IDLE}`}
           >
-            <span className="material-symbols-outlined text-xl">storefront</span>
+            <span className="material-symbols-outlined text-xl">
+              storefront
+            </span>
             <span className="text-left">
-              <span className="block leading-none font-bold">Pemilik Bisnis F&B</span>
+              <span className="block leading-none font-bold">
+                Pemilik Bisnis F&B
+              </span>
               <span className="text-body-sm font-body-sm text-on-surface-variant block text-xs mt-0.5">
                 Kafe, Resto, Katering
               </span>
@@ -187,9 +216,13 @@ export default function RegisterForm() {
             onClick={() => setRole("supplier")}
             className={`${ROLE_BTN} ${role === "supplier" ? ROLE_ACTIVE : ROLE_IDLE}`}
           >
-            <span className="material-symbols-outlined text-xl">local_shipping</span>
+            <span className="material-symbols-outlined text-xl">
+              local_shipping
+            </span>
             <span className="text-left">
-              <span className="block leading-none font-bold">Mitra Pemasok</span>
+              <span className="block leading-none font-bold">
+                Mitra Pemasok
+              </span>
               <span className="text-body-sm font-body-sm text-on-surface-variant block text-xs mt-0.5">
                 Bahan Baku & Kemasan
               </span>
@@ -202,11 +235,15 @@ export default function RegisterForm() {
       {activeError && (
         <div
           role="alert"
-          className="mb-5 flex items-start gap-3 p-4 rounded-[16px] bg-[#FDF2F2] border border-[#B54747]/30 text-[#B54747]"
+          className="mb-5 flex items-start gap-3 p-4 rounded-2xl bg-[#FDF2F2] border border-[#B54747]/30 text-[#B54747]"
         >
-          <span className="material-symbols-outlined text-xl mt-0.5">error</span>
+          <span className="material-symbols-outlined text-xl mt-0.5">
+            error
+          </span>
           <div className="flex-1">
-            <p className="font-label-md text-label-md font-bold">Pendaftaran Gagal</p>
+            <p className="font-label-md text-label-md font-bold">
+              Pendaftaran Gagal
+            </p>
             <p className="font-body-sm text-body-sm mt-0.5">{activeError}</p>
           </div>
         </div>
@@ -214,7 +251,7 @@ export default function RegisterForm() {
       {isSuccess && (
         <div
           role="status"
-          className="mb-5 flex items-start gap-3 p-4 rounded-[16px] bg-[#E8F3EC] border border-[#137A48]/30 text-[#137A48]"
+          className="mb-5 flex items-start gap-3 p-4 rounded-2xl bg-[#E8F3EC] border border-primary-container/30 text-primary-container"
         >
           <span
             className="material-symbols-outlined text-xl mt-0.5"
@@ -223,12 +260,17 @@ export default function RegisterForm() {
             verified
           </span>
           <div className="flex-1">
-            <p className="font-label-md text-label-md font-bold">Pendaftaran Berhasil!</p>
+            <p className="font-label-md text-label-md font-bold">
+              Pendaftaran Berhasil!
+            </p>
             <p className="font-body-sm text-body-sm mt-0.5">
               {successMessage || (
                 <>
                   Pendaftaran sebagai {copy.nama} sudah diterima. Silakan{" "}
-                  <Link href="/login" className="font-bold underline underline-offset-2">
+                  <Link
+                    href="/login"
+                    className="font-bold underline underline-offset-2"
+                  >
                     masuk ke akun Anda
                   </Link>
                   .
@@ -301,7 +343,9 @@ export default function RegisterForm() {
                 ))}
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant flex items-center">
-                <span className="material-symbols-outlined text-xl">expand_more</span>
+                <span className="material-symbols-outlined text-xl">
+                  expand_more
+                </span>
               </div>
             </div>
           </div>
@@ -326,7 +370,10 @@ export default function RegisterForm() {
         {/* Baris 3: WhatsApp */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-label-md font-label-md text-on-surface" htmlFor="whatsapp_number">
+            <label
+              className="block text-label-md font-label-md text-on-surface"
+              htmlFor="whatsapp_number"
+            >
               Nomor WhatsApp Aktif <Req />
             </label>
           </div>
@@ -348,7 +395,8 @@ export default function RegisterForm() {
             />
           </div>
           <p className="text-body-sm font-body-sm text-outline mt-1">
-            Nomor ini digunakan untuk kirim notifikasi pesanan masuk & rekap transaksi harian otomatis.
+            Nomor ini digunakan untuk kirim notifikasi pesanan masuk & rekap
+            transaksi harian otomatis.
           </p>
         </div>
 
@@ -417,7 +465,9 @@ export default function RegisterForm() {
         {/* Indikator kekuatan kata sandi */}
         <div className="space-y-1.5 pt-0.5">
           <div className="flex items-center justify-between text-label-sm font-label-sm">
-            <span className="text-on-surface-variant">Kekuatan Kata Sandi:</span>
+            <span className="text-on-surface-variant">
+              Kekuatan Kata Sandi:
+            </span>
             <span className={`font-bold ${kuat.text}`}>{kuat.label}</span>
           </div>
           <div className="grid grid-cols-4 gap-1.5 h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
@@ -480,7 +530,9 @@ export default function RegisterForm() {
                   ? "Pendaftaran Terkirim"
                   : "Daftar Akun BAPER Sekarang"}
             </span>
-            <span className="material-symbols-outlined text-xl">check_circle</span>
+            <span className="material-symbols-outlined text-xl">
+              check_circle
+            </span>
           </button>
         </div>
 
