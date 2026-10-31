@@ -10,12 +10,12 @@ import { useLogin } from "@/features/auth/hooks/use-login";
 // Tujuan setelah login berhasil, berdasarkan peran dari backend.
 const ROLE_REDIRECT: Record<string, string> = {
   super_admin: "/admin/dashboard",
-  pemilik: "/pemilik/monitoring",
   owner: "/pemilik/monitoring",
   manajer_gudang: "/pemilik/monitoring",
   pemasok: "/portal",
   kasir: "/pemilik/monitoring",
 };
+
 const DEFAULT_REDIRECT = "/pemilik/monitoring";
 
 // Jeda agar pesan "Verifikasi Berhasil!" sempat terbaca sebelum pindah halaman.
@@ -34,7 +34,7 @@ export default function LoginPage() {
   const loginMutation = useLogin({
     onSuccess: (data) => {
       setSuccessMessage(
-        `Selamat datang kembali, ${data.user.name}! Mengalihkan ke dashboard...`
+        `Selamat datang kembali, ${data.user.name}! Mengalihkan ke dashboard...`,
       );
       const role = data.user.role;
       setTimeout(() => {
@@ -306,7 +306,13 @@ export default function LoginPage() {
                   isLoading || isSuccess ? "opacity-75 cursor-not-allowed" : ""
                 }`}
               >
-                <span>{isLoading ? "Memverifikasi..." : isSuccess ? "Mengarahkan..." : "Masuk ke Akun"}</span>
+                <span>
+                  {isLoading
+                    ? "Memverifikasi..."
+                    : isSuccess
+                      ? "Mengarahkan..."
+                      : "Masuk ke Akun"}
+                </span>
                 {isLoading ? (
                   <svg
                     className="animate-spin h-5 w-5 text-white"
