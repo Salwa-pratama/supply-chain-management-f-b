@@ -122,3 +122,16 @@ body {
   background: #f5f8f6;
   color: var(--color-on-surface);
 }
+
+/* Utilitas kustom dari desain Stitch */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(232, 243, 236, 0.4); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #becabe; border-radius: 9999px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6f7a70; }
+
+.center-control-glow {
+  box-shadow: 0 0 0 4px rgba(19, 122, 72, 0.16), 0 12px 28px -6px rgba(19, 122, 72, 0.18);
+}
+.stage-card-active {
+  box-shadow: 0 0 0 3px rgba(19, 122, 72, 0.25), 0 8px 24px -4px rgba(0, 95, 53, 0.12);
+}
