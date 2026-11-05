@@ -8,17 +8,19 @@ import SiteFooter from "@/components/site/SiteFooter";
 import { useLogin } from "@/features/auth/hooks/use-login";
 
 // Tujuan setelah login berhasil, berdasarkan peran dari backend.
+// Nama peran (kunci) harus sama persis dengan yang dikirim API.
 const ROLE_REDIRECT: Record<string, string> = {
   super_admin: "/admin/dashboard",
-  owner: "/pemilik/monitoring",
-  manajer_gudang: "/pemilik/monitoring",
-  pemasok: "/portal",
-  kasir: "/pemilik/monitoring",
+  owner: "/pemilik/dashboard",
+  pemilik: "/pemilik/dashboard",
+  manajer_gudang: "/gudang/dashboard",
+  pemasok: "/pemasok/dashboard",
+  kasir: "/kasir",
 };
 
-const DEFAULT_REDIRECT = "/pemilik/monitoring";
+const DEFAULT_REDIRECT = "/pemilik/dashboard";
 
-// Jeda agar pesan "Verifikasi Berhasil!" sempatP terbaca sebelum pindah halaman.
+// Jeda agar pesan berhasil sempat terbaca sebelum pindah halaman.
 const REDIRECT_DELAY_MS = 1200;
 
 export default function LoginPage() {
@@ -74,10 +76,8 @@ export default function LoginPage() {
   // Kelas input: normal vs error
   const inputBase =
     "w-full h-12 pl-12 bg-white border rounded-[16px] text-body-md font-body-md text-[#172033] placeholder-[#7B8794] focus:outline-none transition-all duration-150";
-  const inputNormal =
-    "border-[#94B9A9] focus:border-[#137A48] focus:ring-2 focus:ring-[#137A48]/20";
-  const inputError =
-    "border-[#B54747] focus:border-[#B54747] ring-2 ring-[#B54747]/20";
+  const inputNormal = "border-[#94B9A9] focus:border-[#137A48] focus:ring-2 focus:ring-[#137A48]/20";
+  const inputError = "border-[#B54747] focus:border-[#B54747] ring-2 ring-[#B54747]/20";
 
   return (
     <div className="min-h-screen flex flex-col justify-between selection:bg-secondary-container selection:text-primary">
@@ -145,8 +145,7 @@ export default function LoginPage() {
                   Selamat Datang Kembali
                 </h2>
                 <p className="font-body-md text-body-md text-[#7B8794]">
-                  Masuk ke akun Anda untuk mengelola pesanan dan rekap bisnis
-                  harian.
+                  Masuk ke akun Anda untuk mengelola pesanan dan rekap bisnis harian.
                 </p>
               </div>
             </div>
@@ -158,9 +157,7 @@ export default function LoginPage() {
                   role="alert"
                   className="flex items-start gap-3 p-4 rounded-[16px] bg-[#FDF2F2] border border-[#B54747]/30 text-[#B54747]"
                 >
-                  <span className="material-symbols-outlined text-xl mt-0.5">
-                    error
-                  </span>
+                  <span className="material-symbols-outlined text-xl mt-0.5">error</span>
                   <div className="flex-1">
                     <p className="font-label-md text-label-md font-bold">
                       Gagal Masuk
@@ -208,9 +205,7 @@ export default function LoginPage() {
                 </label>
                 <div className="relative flex items-center">
                   <span className="absolute left-4 text-[#7B8794] flex items-center pointer-events-none">
-                    <span className="material-symbols-outlined text-[20px]">
-                      alternate_email
-                    </span>
+                    <span className="material-symbols-outlined text-[20px]">alternate_email</span>
                   </span>
                   <input
                     id="username-input"
@@ -220,9 +215,7 @@ export default function LoginPage() {
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     placeholder="nama@tokoanda.com atau 08123456789"
-                    className={`${inputBase} pr-4 ${
-                      errors.identifier ? inputError : inputNormal
-                    }`}
+                    className={`${inputBase} pr-4 ${errors.identifier ? inputError : inputNormal}`}
                   />
                 </div>
                 {errors.identifier && (
@@ -242,9 +235,7 @@ export default function LoginPage() {
                 </label>
                 <div className="relative flex items-center">
                   <span className="absolute left-4 text-[#7B8794] flex items-center pointer-events-none">
-                    <span className="material-symbols-outlined text-[20px]">
-                      lock
-                    </span>
+                    <span className="material-symbols-outlined text-[20px]">lock</span>
                   </span>
                   <input
                     id="password-input"
@@ -254,9 +245,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Masukkan kata sandi Anda"
-                    className={`${inputBase} pr-12 ${
-                      errors.password ? inputError : inputNormal
-                    }`}
+                    className={`${inputBase} pr-12 ${errors.password ? inputError : inputNormal}`}
                   />
                   <button
                     type="button"
@@ -270,9 +259,7 @@ export default function LoginPage() {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="font-body-sm text-body-sm text-[#B54747] pt-1">
-                    Kata sandi wajib diisi.
-                  </p>
+                  <p className="font-body-sm text-body-sm text-[#B54747] pt-1">Kata sandi wajib diisi.</p>
                 )}
               </div>
 
@@ -286,9 +273,7 @@ export default function LoginPage() {
                     onChange={(e) => setRemember(e.target.checked)}
                     className="w-5 h-5 rounded-[6px] border-[1.5px] border-[#94B9A9] text-[#137A48] focus:ring-0 focus:ring-offset-0 focus:outline-none accent-[#137A48] cursor-pointer"
                   />
-                  <span className="font-body-md text-body-md text-[#172033]">
-                    Ingat saya
-                  </span>
+                  <span className="font-body-md text-body-md text-[#172033]">Ingat saya</span>
                 </label>
                 <Link
                   href="#"
@@ -335,18 +320,14 @@ export default function LoginPage() {
                     />
                   </svg>
                 ) : (
-                  <span className="material-symbols-outlined text-[18px]">
-                    arrow_forward
-                  </span>
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 )}
               </button>
 
               {/* Pemisah */}
               <div className="relative py-2 flex items-center justify-center">
                 <div className="w-full border-t border-slate-200" />
-                <span className="absolute bg-white px-3 font-body-sm text-body-sm text-[#7B8794]">
-                  atau
-                </span>
+                <span className="absolute bg-white px-3 font-body-sm text-body-sm text-[#7B8794]">atau</span>
               </div>
 
               {/* Login Google */}
