@@ -18,7 +18,7 @@ const ROLE_REDIRECT: Record<string, string> = {
 
 const DEFAULT_REDIRECT = "/pemilik/monitoring";
 
-// Jeda agar pesan "Verifikasi Berhasil!" sempat terbaca sebelum pindah halaman.
+// Jeda agar pesan "Verifikasi Berhasil!" sempatP terbaca sebelum pindah halaman.
 const REDIRECT_DELAY_MS = 1200;
 
 export default function LoginPage() {
