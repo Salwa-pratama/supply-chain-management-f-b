@@ -4,18 +4,21 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ServiceResponse } from '../models/service_response';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Internal server error';
+    let message = 'Terjadi kesalahan pada sistem. Silakan coba beberapa saat lagi.';
     let data: unknown = null;
 
     if (exception instanceof HttpException) {
@@ -38,7 +41,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
         }
       }
     } else if (exception instanceof Error) {
-      message = exception.message;
+      // Log error teknis di terminal untuk keperluan debugging pengembang
+      this.logger.error(`[Unhandled Exception] ${exception.message}`, exception.stack);
+
+      // Cek apakah error merupakan Prisma unique constraint (P2002)
+      const errObj = exception as { code?: string; meta?: { target?: string[] | string } };
+      if (errObj.code === 'P2002') {
+        status = HttpStatus.CONFLICT;
+        message = 'Email sudah digunakan. Silakan gunakan email lain atau masuk ke akun Anda.';
+      } else {
+        // Jangan pernah membocorkan detail database/Prisma/SQL ke pengguna
+        status = HttpStatus.INTERNAL_SERVER_ERROR;
+        message = 'Terjadi kesalahan pada sistem. Silakan coba beberapa saat lagi.';
+      }
     }
 
     const errorPayload = ServiceResponse.failure(message, data, status);

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import SidebarNav from "@/components/layout/SidebarNav";
 import { pemasokMenu } from "@/lib/menu";
+import LogoutButton from "@/features/auth/components/LogoutButton";
 
 export default function PemasokSidebar() {
   return (
@@ -36,13 +37,11 @@ export default function PemasokSidebar() {
           <span className="material-symbols-outlined text-[18px]">help</span>
           <span>Pusat Bantuan Mitra</span>
         </Link>
-        <Link
-          href="/login"
-          className="flex items-center gap-3 text-error hover:bg-[#FDF2F2] rounded-lg px-3 py-2 text-label-md font-label-md transition-colors"
-        >
-          <span className="material-symbols-outlined text-[18px]">logout</span>
-          <span>Keluar</span>
-        </Link>
+        <LogoutButton
+          label="Keluar"
+          className="flex items-center gap-3 text-error hover:bg-[#FDF2F2] rounded-lg px-3 py-2 text-label-md font-label-md transition-colors w-full text-left"
+          iconClassName="material-symbols-outlined text-[18px]"
+        />
         <div className="mt-2 text-[10px] text-tertiary/70 text-center">
           BAPER SCM v2.4 • Portal Mitra Resmi
         </div>

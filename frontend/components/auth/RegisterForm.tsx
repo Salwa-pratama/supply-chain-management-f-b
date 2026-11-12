@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRegister } from "@/features/auth/hooks/use-register";
+import { useToast } from "@/components/ui/Toast";
+import { formatErrorMessage } from "@/lib/error-formatter";
 
 type Role = "merchant" | "supplier";
 
@@ -93,20 +95,23 @@ export default function RegisterForm() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const router = useRouter();
-  const [error, setError] = useState("");
+  const toast = useToast();
+  const [errorDetails, setErrorDetails] = useState<{ title: string; message: string } | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
 
   const registerMutation = useRegister({
     onSuccess: (data) => {
-      setSuccessMessage(
-        `Akun ${data.user.name} berhasil dibuat! Mengalihkan ke halaman login...`,
-      );
+      const msg = `Akun ${data.user.name} berhasil dibuat! Mengalihkan ke halaman login...`;
+      setSuccessMessage(msg);
+      toast.success(msg, "Pendaftaran Berhasil");
       setTimeout(() => {
         router.push("/login");
       }, 1500);
     },
     onError: (err) => {
-      setError(err.message || "Gagal melakukan registrasi");
+      const parsed = formatErrorMessage(err, "register");
+      setErrorDetails(parsed);
+      toast.error(parsed.message, parsed.title);
     },
   });
 
@@ -115,11 +120,28 @@ export default function RegisterForm() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (password !== confirm) {
-      setError("Konfirmasi kata sandi tidak cocok. Harap periksa kembali.");
+
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      const parsed = {
+        title: "Formulir Belum Lengkap",
+        message: "Mohon isi nama lengkap, email, dan kata sandi Anda.",
+      };
+      setErrorDetails(parsed);
+      toast.warning(parsed.message, parsed.title);
       return;
     }
-    setError("");
+
+    if (password !== confirm) {
+      const parsed = {
+        title: "Kata Sandi Tidak Cocok",
+        message: "Konfirmasi kata sandi tidak cocok. Harap periksa kembali.",
+      };
+      setErrorDetails(parsed);
+      toast.error(parsed.message, parsed.title);
+      return;
+    }
+
+    setErrorDetails(null);
 
     const backendRole = role === "supplier" ? "pemasok" : "owner";
     registerMutation.mutate({
@@ -135,7 +157,6 @@ export default function RegisterForm() {
 
   const isLoading = registerMutation.isPending;
   const isSuccess = registerMutation.isSuccess;
-  const activeError = error || registerMutation.error?.message;
 
   return (
     <div className="bg-surface-container-lowest p-6 sm:p-8 md:p-10 rounded-2xl border border-[rgba(148,185,169,0.35)] shadow-[0_4px_20px_-2px_rgba(23,32,51,0.06)]">
@@ -232,7 +253,7 @@ export default function RegisterForm() {
       </div>
 
       {/* Pesan error / sukses */}
-      {activeError && (
+      {errorDetails && (
         <div
           role="alert"
           className="mb-5 flex items-start gap-3 p-4 rounded-2xl bg-[#FDF2F2] border border-[#B54747]/30 text-[#B54747]"
@@ -242,9 +263,9 @@ export default function RegisterForm() {
           </span>
           <div className="flex-1">
             <p className="font-label-md text-label-md font-bold">
-              Pendaftaran Gagal
+              {errorDetails.title}
             </p>
-            <p className="font-body-sm text-body-sm mt-0.5">{activeError}</p>
+            <p className="font-body-sm text-body-sm mt-0.5">{errorDetails.message}</p>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import SidebarNav from "@/components/layout/SidebarNav";
 import { pemilikMenu } from "@/lib/menu";
+import LogoutButton from "@/features/auth/components/LogoutButton";
 
 export default function PemilikSidebar() {
   return (
@@ -36,13 +37,11 @@ export default function PemilikSidebar() {
           <span className="material-symbols-outlined text-[20px]">help</span>
           <span className="text-label-md font-label-md">Pusat Bantuan</span>
         </Link>
-        <Link
-          href="/login"
-          className="flex items-center gap-3 text-error hover:bg-error-container/40 rounded-lg px-3 py-2 transition-colors"
-        >
-          <span className="material-symbols-outlined text-[20px]">logout</span>
-          <span className="text-label-md font-label-md font-semibold">Keluar</span>
-        </Link>
+        <LogoutButton
+          label="Keluar"
+          className="flex items-center gap-3 text-error hover:bg-error-container/40 rounded-lg px-3 py-2 transition-colors w-full text-left"
+          iconClassName="material-symbols-outlined text-[20px]"
+        />
       </div>
     </aside>
   );

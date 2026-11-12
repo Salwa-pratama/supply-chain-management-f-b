@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 import QueryProvider from "@/providers/query-provider";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export default function RootLayout({
   children,
@@ -48,7 +49,9 @@ export default function RootLayout({
         className="bg-[#F5F8F6] text-on-surface font-body-md text-body-md antialiased"
         suppressHydrationWarning
       >
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );

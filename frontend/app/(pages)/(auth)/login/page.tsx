@@ -6,51 +6,58 @@ import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import SiteFooter from "@/components/site/SiteFooter";
 import { useLogin } from "@/features/auth/hooks/use-login";
-
-// Tujuan setelah login berhasil, berdasarkan peran dari backend.
-// Nama peran (kunci) harus sama persis dengan yang dikirim API.
-const ROLE_REDIRECT: Record<string, string> = {
-  super_admin: "/admin/dashboard",
-  owner: "/pemilik/dashboard",
-  pemilik: "/pemilik/dashboard",
-  manajer_gudang: "/gudang/dashboard",
-  pemasok: "/pemasok/dashboard",
-  kasir: "/kasir",
-};
-
-const DEFAULT_REDIRECT = "/pemilik/dashboard";
+import {
+  getHomeRouteForRole,
+  isRouteAllowedForRole,
+} from "@/features/auth/utils/role-routes";
+import { useToast } from "@/components/ui/Toast";
+import { formatErrorMessage } from "@/lib/error-formatter";
 
 // Jeda agar pesan berhasil sempat terbaca sebelum pindah halaman.
 const REDIRECT_DELAY_MS = 1200;
 
 export default function LoginPage() {
   const router = useRouter();
+  const toast = useToast();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const [errors, setErrors] = useState({ identifier: false, password: false });
+  const [errorDetails, setErrorDetails] = useState<{ title: string; message: string } | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
 
   const loginMutation = useLogin({
     onSuccess: (data) => {
-      setSuccessMessage(
-        `Selamat datang kembali, ${data.user.name}! Mengalihkan ke dashboard...`,
-      );
+      const msg = `Selamat datang kembali, ${data.user.name}! Mengalihkan ke dashboard...`;
+      setSuccessMessage(msg);
+      toast.success(msg, "Login Berhasil");
       const role = data.user.role;
+      let targetUrl = getHomeRouteForRole(role);
+
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const callbackUrl = params.get("callbackUrl");
+        if (callbackUrl && isRouteAllowedForRole(callbackUrl, role)) {
+          targetUrl = callbackUrl;
+        }
+      }
+
       setTimeout(() => {
-        router.push(ROLE_REDIRECT[role] ?? DEFAULT_REDIRECT);
+        router.push(targetUrl);
       }, REDIRECT_DELAY_MS);
+    },
+    onError: (err) => {
+      const parsed = formatErrorMessage(err, "login");
+      setErrorDetails(parsed);
+      toast.error(parsed.message, parsed.title);
     },
   });
 
   const isLoading = loginMutation.isPending;
   const isSuccess = loginMutation.isSuccess;
   const isError = loginMutation.isError;
-  const errorMessage =
-    loginMutation.error?.message ||
-    "Email atau kata sandi tidak cocok dengan data terdaftar di sistem BAPER.";
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -62,8 +69,16 @@ export default function LoginPage() {
     };
     setErrors(nextErrors);
     if (nextErrors.identifier || nextErrors.password) {
+      const parsed = {
+        title: "Kredensial Belum Lengkap",
+        message: "Mohon isi email atau nomor WhatsApp dan kata sandi Anda.",
+      };
+      setErrorDetails(parsed);
+      toast.warning(parsed.message, parsed.title);
       return;
     }
+
+    setErrorDetails(null);
 
     // 2. Kirim data via TanStack Query mutation
     loginMutation.mutate({
@@ -150,8 +165,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Alert error / sukses TanStack Query */}
-            {isError && (
+            {/* Alert error / sukses */}
+            {(errorDetails || isError) && (
               <div className="mb-6">
                 <div
                   role="alert"
@@ -160,10 +175,10 @@ export default function LoginPage() {
                   <span className="material-symbols-outlined text-xl mt-0.5">error</span>
                   <div className="flex-1">
                     <p className="font-label-md text-label-md font-bold">
-                      Gagal Masuk
+                      {errorDetails?.title || "Gagal Masuk"}
                     </p>
                     <p className="font-body-sm text-body-sm mt-0.5">
-                      {errorMessage}
+                      {errorDetails?.message || "Terjadi kesalahan, cek ulang password maupun email Anda."}
                     </p>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import SidebarNav from "@/components/layout/SidebarNav";
 import QuickQCButton from "@/components/gudang/QuickQCButton";
 import { gudangMenu } from "@/lib/menu";
+import LogoutButton from "@/features/auth/components/LogoutButton";
 
 export default function GudangSidebar() {
   return (
@@ -33,13 +34,11 @@ export default function GudangSidebar() {
             <span className="material-symbols-outlined text-[18px]">help</span>
             <span>Pusat Bantuan</span>
           </Link>
-          <Link
-            href="/login"
-            className="flex items-center gap-3 text-tertiary hover:text-error rounded-lg px-3 py-2 text-body-sm font-body-sm hover:bg-error-container/20 transition-colors"
-          >
-            <span className="material-symbols-outlined text-[18px]">logout</span>
-            <span>Keluar</span>
-          </Link>
+          <LogoutButton
+            label="Keluar"
+            className="flex items-center gap-3 text-tertiary hover:text-error rounded-lg px-3 py-2 text-body-sm font-body-sm hover:bg-error-container/20 transition-colors w-full text-left"
+            iconClassName="material-symbols-outlined text-[18px]"
+          />
         </div>
         <div className="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-lg bg-primary-container text-white font-bold flex items-center justify-center text-label-md shrink-0">

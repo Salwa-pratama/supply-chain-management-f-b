@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { registerApi } from "../api/register";
 import { AuthResponseData, RegisterPayload } from "../types/auth.types";
 import { ApiError } from "@/lib/api-client";
+import { saveAuthSession } from "../utils/auth-storage";
 
 interface UseRegisterOptions {
   onSuccess?: (data: AuthResponseData) => void;
@@ -16,10 +17,9 @@ export function useRegister(options?: UseRegisterOptions) {
   return useMutation<AuthResponseData, ApiError, RegisterPayload>({
     mutationFn: (payload) => registerApi(payload),
     onSuccess: (data) => {
-      // Simpan JWT access token jika otomatis login setelah register
+      // Simpan JWT access token dan session role jika otomatis login setelah register
       if (typeof window !== "undefined" && data.accessToken) {
-        localStorage.setItem("baper_access_token", data.accessToken);
-        localStorage.setItem("baper_user", JSON.stringify(data.user));
+        saveAuthSession(data.accessToken, data.user);
       }
 
       queryClient.setQueryData(["auth", "me"], data.user);

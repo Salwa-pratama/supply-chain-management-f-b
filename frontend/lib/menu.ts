@@ -56,14 +56,14 @@ export const pemasokMenu: NavGroup[] = [
   {
     items: [
       { label: "Dashboard Pemasok", href: "/pemasok/dashboard", icon: "dashboard" },
-      { label: "Profil Pemasok & Perusahaan", href: "#", icon: "storefront" },
-      { label: "Katalog Bahan & Barang", href: "#", icon: "inventory_2" },
-      { label: "Pesanan Pasokan (PO)", href: "#", icon: "receipt_long", badge: "5 Baru" },
-      { label: "Permintaan Pembelian", href: "#", icon: "assignment_turned_in" },
-      { label: "Pengiriman & Logistik", href: "#", icon: "local_shipping", badge: "4 Jalan" },
-      { label: "Riwayat Transaksi", href: "#", icon: "account_balance_wallet" },
-      { label: "Notifikasi", href: "#", icon: "notifications" },
-      { label: "Pengaturan Akun", href: "#", icon: "settings" },
+      { label: "Profil Pemasok & Perusahaan", href: "/pemasok/profil", icon: "storefront" },
+      { label: "Katalog Bahan & Barang", href: "/pemasok/katalog", icon: "inventory_2" },
+      { label: "Pesanan Pasokan (PO)", href: "/pemasok/pesanan-po", icon: "receipt_long", badge: "5 Baru" },
+      { label: "Permintaan Pembelian", href: "/pemasok/permintaan", icon: "assignment_turned_in" },
+      { label: "Pengiriman & Logistik", href: "/pemasok/pengiriman", icon: "local_shipping", badge: "4 Jalan" },
+      { label: "Riwayat Transaksi", href: "/pemasok/riwayat", icon: "account_balance_wallet" },
+      { label: "Notifikasi", href: "/pemasok/notifikasi", icon: "notifications" },
+      { label: "Pengaturan Akun", href: "/pemasok/pengaturan", icon: "settings" },
     ],
   },
 ];

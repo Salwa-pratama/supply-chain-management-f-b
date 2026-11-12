@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { loginApi } from "../api/login";
 import { AuthResponseData, LoginPayload } from "../types/auth.types";
 import { ApiError } from "@/lib/api-client";
+import { saveAuthSession } from "../utils/auth-storage";
 
 interface UseLoginOptions {
   onSuccess?: (data: AuthResponseData) => void;
@@ -16,10 +17,9 @@ export function useLogin(options?: UseLoginOptions) {
   return useMutation<AuthResponseData, ApiError, LoginPayload>({
     mutationFn: (payload) => loginApi(payload),
     onSuccess: (data) => {
-      // Simpan JWT access token di browser
+      // Simpan JWT access token dan session role di browser (localStorage + cookies)
       if (typeof window !== "undefined" && data.accessToken) {
-        localStorage.setItem("baper_access_token", data.accessToken);
-        localStorage.setItem("baper_user", JSON.stringify(data.user));
+        saveAuthSession(data.accessToken, data.user);
       }
 
       // Update cache user profile

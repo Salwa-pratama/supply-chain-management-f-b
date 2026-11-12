@@ -2,6 +2,7 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import SidebarNav from "@/components/layout/SidebarNav";
 import { adminMenu } from "@/lib/menu";
+import LogoutButton from "@/features/auth/components/LogoutButton";
 
 export default function AdminSidebar() {
   return (
@@ -45,13 +46,11 @@ export default function AdminSidebar() {
           <span className="material-symbols-outlined text-[19px]">help</span>
           <span className="font-label-md text-label-md">Pusat Bantuan SCM</span>
         </Link>
-        <Link
-          href="/login"
-          className="flex items-center gap-3 text-error hover:bg-error-container/30 rounded-lg px-3 py-2 transition-colors"
-        >
-          <span className="material-symbols-outlined text-[19px]">logout</span>
-          <span className="font-label-md text-label-md font-semibold">Keluar Sistem</span>
-        </Link>
+        <LogoutButton
+          label="Keluar Sistem"
+          className="flex items-center gap-3 text-error hover:bg-error-container/30 rounded-lg px-3 py-2 transition-colors w-full text-left"
+          iconClassName="material-symbols-outlined text-[19px]"
+        />
       </div>
     </aside>
   );
