@@ -15,7 +15,14 @@ interface RoleGuardProps {
   children: React.ReactNode;
 }
 
+// Nonaktifkan sementara proteksi role untuk tahap fiksasi & perancangan antarmuka
+const BYPASS_ROLE_GUARD = true;
+
 export default function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
+  if (BYPASS_ROLE_GUARD) {
+    return <>{children}</>;
+  }
+
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);

@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
-import OwnerTopbar from "@/components/pemilik/OwnerTopbar";
 
 export const metadata: Metadata = { title: "Dashboard Bisnis | BAPER SCM" };
 
 export default function PemilikDashboardPage() {
   return (
-    <>
-      <OwnerTopbar />
-      <main className="p-8 max-w-[1440px] flex flex-col gap-6">
-        {/* 1. KARTU SAMBUTAN & STATUS OPERASIONAL TOKO */}
+    <div className="flex flex-col gap-6">
+      {/* 1. KARTU SAMBUTAN & STATUS OPERASIONAL TOKO */}
         <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-2xl bg-secondary-container/60 flex items-center justify-center text-primary-container shrink-0">
@@ -577,7 +574,6 @@ export default function PemilikDashboardPage() {
             </button>
           </div>
         </div>
-      </main>
-    </>
+      </div>
   );
 }

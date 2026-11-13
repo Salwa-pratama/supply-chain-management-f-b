@@ -120,9 +120,8 @@ export default function GudangDashboard() {
 
   return (
     <>
-      <GudangHeader onQuickPO={() => triggerQuickPO()} />
-
-      <main className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+      <div className="space-y-6">
+        {/* Toast Notification */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <nav className="flex items-center gap-2 text-label-sm font-label-sm text-tertiary mb-1">
@@ -880,7 +879,7 @@ export default function GudangDashboard() {
             </button>
           </div>
         </div>
-      </main>
+      </div>
 
       {qcOpen && (
         <div

@@ -5,11 +5,11 @@ import RoleGuard from "@/features/auth/components/RoleGuard";
 export default function PemilikLayout({ children }: { children: React.ReactNode }) {
   return (
     <RoleGuard allowedRoles={["owner", "pemilik", "super_admin"]}>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-[#F5F8F6]">
         <PemilikSidebar />
-        <div className="pl-[260px] flex-1 flex flex-col">
+        <div className="pl-[260px] flex-1 flex flex-col min-h-screen">
           <PemilikTopbar />
-          <main className="p-8 flex-1 flex flex-col gap-8 max-w-[1720px]">{children}</main>
+          <main className="flex-1 p-8 max-w-[1440px] w-full mx-auto space-y-8">{children}</main>
         </div>
       </div>
     </RoleGuard>

@@ -7,7 +7,14 @@ import {
   isRouteAllowedForRole,
 } from "./features/auth/utils/role-routes";
 
+// Nonaktifkan sementara middleware guard untuk tahap fiksasi desain antarmuka
+const BYPASS_AUTH_MIDDLEWARE = true;
+
 export function middleware(request: NextRequest) {
+  if (BYPASS_AUTH_MIDDLEWARE) {
+    return NextResponse.next();
+  }
+
   const { pathname } = request.nextUrl;
 
   const token = request.cookies.get("baper_access_token")?.value;
