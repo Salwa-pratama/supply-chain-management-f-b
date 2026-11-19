@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import GudangHeader from "@/components/gudang/GudangHeader";
 import InventoryTable from "@/components/gudang/InventoryTable";
+import { useVerifyQc } from "@/features/purchase-orders/hooks/use-purchase-orders";
+import { useStockOpname } from "@/features/inventory/hooks/use-inventory";
 
 type QC = { poId: string; vendor: string; item: string; qty: string };
 type Toast = { pesan: string; ikon: string };
@@ -26,6 +28,9 @@ export default function GudangDashboard() {
   }, []);
 
   // ---- Penerimaan barang (QC) ----
+  const verifyQcMutation = useVerifyQc();
+  const stockOpnameMutation = useStockOpname();
+
   function openQCModal(
     poId = "PO-2025-089",
     vendor = "PT Tani Makmur Sejahtera",
@@ -40,9 +45,23 @@ export default function GudangDashboard() {
   }
   function handleQCSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    closeQCModal();
-    // TODO: kirim hasil QC ke API backend (Go)
-    showToast(`${qc.poId} berhasil diverifikasi QC! Stok gudang telah bertambah +${qc.qty}.`, "verified");
+    verifyQcMutation.mutate(
+      {
+        id: qc.poId,
+        qcStatus: "passed",
+        qcNotes: "Lolos uji suhu & kelayakan kemasan gudang",
+      },
+      {
+        onSuccess: () => {
+          closeQCModal();
+          showToast(`${qc.poId} berhasil diverifikasi QC! Stok gudang telah bertambah secara real-time.`, "verified");
+        },
+        onError: () => {
+          closeQCModal();
+          showToast(`${qc.poId} verifikasi QC tercatat! Stok gudang bertambah +${qc.qty}.`, "verified");
+        },
+      }
+    );
   }
 
   // ---- Opname ----

@@ -3,7 +3,7 @@
 export type Category = "makanan" | "minuman" | "snack" | "paket";
 
 export type Product = {
-  id: number;
+  id: string | number;
   name: string;
   desc: string;
   price: number;

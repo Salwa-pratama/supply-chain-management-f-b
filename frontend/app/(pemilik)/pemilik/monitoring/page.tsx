@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
+"use client";
+
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import ActivityTable from "@/components/pemilik/ActivityTable";
-
-export const metadata: Metadata = { title: "Monitoring Rantai Pasok | BAPER" };
+import { useScmPipeline } from "@/features/dashboard/hooks/use-dashboard";
 
 export default function MonitoringPage() {
+  const { data: pipeline, isLoading } = useScmPipeline();
+
   return (
     <>
       {/* 1. HEADER SECTION */}
@@ -55,32 +57,36 @@ export default function MonitoringPage() {
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
               <span className="text-label-md font-label-md text-tertiary">Pesanan Pasokan Aktif</span>
-              <span className="text-headline-lg font-headline-lg text-on-surface mt-1">8 Permintaan</span>
+              <span className="text-headline-lg font-headline-lg text-on-surface mt-1">
+                {isLoading ? "..." : (pipeline?.stage1_supplier || 0)} Permintaan
+              </span>
             </div>
             <div className="w-11 h-11 rounded-xl bg-[#E8F3EC] flex items-center justify-center text-primary">
               <span className="material-symbols-outlined text-[24px]">local_shipping</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between text-body-sm font-body-sm">
-            <span className="text-tertiary">Nilai Total Pengadaan:</span>
-            <span className="font-bold text-primary">Rp 14.250.000</span>
+            <span className="text-tertiary">Status Alur:</span>
+            <span className="font-bold text-primary">Pemasok & Pengiriman</span>
           </div>
         </div>
-        {/* Card 2: Stok Bahan Baku Kritis */}
-        <div className="bg-surface-container-lowest p-5 rounded-2xl border border-error/30 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col justify-between bg-gradient-to-br from-white to-error-container/10">
+        {/* Card 2: Stok Gudang Buffer */}
+        <div className="bg-surface-container-lowest p-5 rounded-2xl border border-[#94B9A9]/40 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
-              <span className="text-label-md font-label-md text-tertiary">Stok Bahan Baku Kritis</span>
-              <span className="text-headline-lg font-headline-lg text-error mt-1">4 Bahan Baku</span>
+              <span className="text-label-md font-label-md text-tertiary">Bahan Baku Gudang</span>
+              <span className="text-headline-lg font-headline-lg text-on-surface mt-1">
+                {isLoading ? "..." : (pipeline?.stage2_warehouse_qc || 0)} Jenis Bahan
+              </span>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-error-container/70 flex items-center justify-center text-error">
-              <span className="material-symbols-outlined text-[24px]">warning</span>
+            <div className="w-11 h-11 rounded-xl bg-[#E8F3EC] flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-[24px]">inventory_2</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between text-body-sm font-body-sm">
-            <span className="text-tertiary">Tindakan Diperlukan:</span>
-            <span className="font-bold text-error bg-error-container/60 px-2.5 py-0.5 rounded-full text-label-sm">
-              Perlu PO Segera
+            <span className="text-tertiary">Kontrol Mutu:</span>
+            <span className="font-bold text-primary bg-[#E8F3EC] px-2.5 py-0.5 rounded-full text-label-sm">
+              QC Terverifikasi
             </span>
           </div>
         </div>
@@ -88,8 +94,10 @@ export default function MonitoringPage() {
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
-              <span className="text-label-md font-label-md text-tertiary">Produksi Berlangsung</span>
-              <span className="text-headline-lg font-headline-lg text-on-surface mt-1">12 Batch</span>
+              <span className="text-label-md font-label-md text-tertiary">Produksi Kitchen</span>
+              <span className="text-headline-lg font-headline-lg text-on-surface mt-1">
+                {isLoading ? "..." : (pipeline?.stage3_kitchen_production || 0)} Menu Aktif
+              </span>
             </div>
             <div className="w-11 h-11 rounded-xl bg-[#E8F3EC] flex items-center justify-center text-primary">
               <span className="material-symbols-outlined text-[24px]">restaurant</span>
@@ -100,12 +108,14 @@ export default function MonitoringPage() {
             <span className="font-semibold text-on-surface">Kitchen & Barista Senopati</span>
           </div>
         </div>
-        {/* Card 4: Pesanan Konsumen Aktif */}
+        {/* Card 4: Transaksi Pelanggan Selesai */}
         <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
-              <span className="text-label-md font-label-md text-tertiary">Pesanan Konsumen Aktif</span>
-              <span className="text-headline-lg font-headline-lg text-primary mt-1">46 Pesanan</span>
+              <span className="text-label-md font-label-md text-tertiary">Transaksi Selesai</span>
+              <span className="text-headline-lg font-headline-lg text-primary mt-1">
+                {isLoading ? "..." : (pipeline?.stage5_customers || 0)} Pesanan
+              </span>
             </div>
             <div className="w-11 h-11 rounded-xl bg-secondary-container/70 flex items-center justify-center text-primary">
               <span
@@ -118,7 +128,7 @@ export default function MonitoringPage() {
           </div>
           <div className="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between text-body-sm font-body-sm">
             <span className="text-tertiary">Kanal Utama:</span>
-            <span className="font-semibold text-primary">Kasir & WhatsApp Bot</span>
+            <span className="font-semibold text-primary">Kasir POS & WhatsApp</span>
           </div>
         </div>
       </div>
@@ -164,7 +174,7 @@ export default function MonitoringPage() {
                     Tahap 01
                   </span>
                   <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#E8F3EC] text-primary font-bold">
-                    2 Pemasok Aktif
+                    {isLoading ? "..." : (pipeline?.stage1_supplier || 0)} PO Pemasok
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mb-3">
@@ -193,7 +203,7 @@ export default function MonitoringPage() {
                   </div>
                   <div className="flex items-center justify-between pt-1 border-t border-outline-variant/20">
                     <span className="text-tertiary">Status PO:</span>
-                    <span className="text-primary font-bold">PO-2025-089 (Di Jalan)</span>
+                    <span className="text-primary font-bold">PO Aktif ({pipeline?.stage1_supplier || 0})</span>
                   </div>
                 </div>
               </div>
@@ -222,7 +232,7 @@ export default function MonitoringPage() {
                     Tahap 02 (Inti)
                   </span>
                   <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-primary text-surface-container-lowest font-bold">
-                    Merchant Hub
+                    {isLoading ? "..." : (pipeline?.stage2_warehouse_qc || 0)} Stok Bahan
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mb-3">
@@ -272,7 +282,7 @@ export default function MonitoringPage() {
                     Tahap 03
                   </span>
                   <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#E8F3EC] text-primary font-bold">
-                    12 Batch Aktif
+                    {isLoading ? "..." : (pipeline?.stage3_kitchen_production || 0)} Menu Aktif
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mb-3">
@@ -319,7 +329,7 @@ export default function MonitoringPage() {
                     Tahap 04
                   </span>
                   <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#E8F3EC] text-primary font-bold">
-                    3 Kanal Siap
+                    {isLoading ? "..." : (pipeline?.stage4_outlet_pos || 0)} Saluran Kasir
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mb-3">
@@ -367,7 +377,7 @@ export default function MonitoringPage() {
                     Tahap 05
                   </span>
                   <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-bold">
-                    98% Kepuasan
+                    {isLoading ? "..." : (pipeline?.stage5_customers || 0)} Transaksi Lunas
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mb-3">
@@ -388,7 +398,7 @@ export default function MonitoringPage() {
                 <div className="bg-[#F5F8F6] p-3 rounded-xl border border-outline-variant/30 flex flex-col gap-1.5 mb-3 text-[12px]">
                   <div className="flex items-center justify-between">
                     <span className="text-tertiary">Total Hari Ini:</span>
-                    <span className="font-bold text-on-surface">148 Transaksi</span>
+                    <span className="font-bold text-on-surface">{pipeline?.stage5_customers || 0} Transaksi</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-tertiary">Status Bayar:</span>

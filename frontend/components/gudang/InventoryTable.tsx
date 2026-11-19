@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { INVENTARIS, type ItemGudang, type StatusStok } from "@/lib/gudang-data";
+import { useInventory } from "@/features/inventory/hooks/use-inventory";
 
 const STATUS: Record<StatusStok, { label: string; badge: string; dot: string }> = {
   safe: {
@@ -124,21 +125,50 @@ function BarisInventaris({ r, onOpname, onPO }: { r: ItemGudang } & Aksi) {
 }
 
 export default function InventoryTable({ onOpname, onPO, onAdd }: Aksi & { onAdd: () => void }) {
+  const { data: dbItems } = useInventory();
   const [cari, setCari] = useState("");
   const [kategori, setKategori] = useState("all");
   const [status, setStatus] = useState("all");
   const [pemasok, setPemasok] = useState("all");
 
+  const inventoryList: ItemGudang[] = useMemo(() => {
+    if (dbItems && dbItems.length > 0) {
+      return dbItems.map((item, idx) => {
+        const isWarning = item.status === "menipis";
+        const isEmpty = item.status === "kritis" || Number(item.stock) <= 0;
+        const currentStatus: StatusStok = isEmpty ? "empty" : isWarning ? "warning" : "safe";
+        const cat = (item.category?.toLowerCase() || "minuman") as ItemGudang["kategori"];
+        return {
+          sku: `SKU-BPR-${String(idx + 1).padStart(3, "0")}`,
+          name: item.name,
+          sub: `Bahan Baku - Satuan ${item.unit}`,
+          kategori: cat,
+          kategoriLabel: item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : "Bahan",
+          vendor: item.preferredSupplier?.name || "PT Tani Makmur Sejahtera",
+          vendorKey: "tani",
+          stok: `${Number(item.stock).toLocaleString("id-ID")} ${item.unit}`,
+          stokCls: isEmpty ? "font-bold text-error" : isWarning ? "font-bold text-[#B7791F]" : "font-bold text-primary",
+          min: `${Number(item.minStock).toLocaleString("id-ID")} ${item.unit}`,
+          lokIcon: item.locationRack?.toLowerCase().includes("chiller") ? "kitchen" : "inventory_2",
+          lokIconCls: "material-symbols-outlined text-[16px] text-primary",
+          lokasi: item.locationRack || "Gudang Utama",
+          status: currentStatus,
+        };
+      });
+    }
+    return INVENTARIS;
+  }, [dbItems]);
+
   const rows = useMemo(() => {
     const q = cari.trim().toLowerCase();
-    return INVENTARIS.filter(
+    return inventoryList.filter(
       (r) =>
         (kategori === "all" || r.kategori === kategori) &&
         (status === "all" || r.status === status) &&
         (pemasok === "all" || r.vendorKey === pemasok) &&
         (!q || [r.sku, r.name, r.sub, r.vendor].some((t) => t.toLowerCase().includes(q))),
     );
-  }, [cari, kategori, status, pemasok]);
+  }, [cari, kategori, status, pemasok, inventoryList]);
   const label = rows.length === 0 ? "0" : `1 - ${rows.length}`;
 
   return (
@@ -254,7 +284,7 @@ export default function InventoryTable({ onOpname, onPO, onAdd }: Aksi & { onAdd
       <div className="p-4 bg-[#F5F8F6]/60 border-t border-outline-variant/25 flex flex-col sm:flex-row items-center justify-between gap-3 text-body-sm font-body-sm text-tertiary">
         <div>
           Menampilkan <span className="font-bold text-on-surface">{label}</span> dari{" "}
-          <span className="font-bold text-on-surface">48</span> jenis persediaan gudang
+          <span className="font-bold text-on-surface">{inventoryList.length}</span> jenis persediaan gudang
         </div>
         <div className="flex items-center gap-2">
           <button

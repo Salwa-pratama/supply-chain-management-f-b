@@ -186,15 +186,21 @@ model Product {
 }
 
 model Order {
-  id          String   @id @default(uuid())
-  businessId  String   @map("business_id")
-  customerId  String?  @map("customer_id")
-  sessionId   String?  @unique @map("session_id")
-  createdById String?  @map("created_by_id")
-  source      String   @default("kasir") // whatsapp, kasir
-  totalAmount Decimal  @map("total_amount") @db.Decimal(12, 2)
-  status      String   @default("pending") // pending, paid, preparing, completed, cancelled
-  createdAt   DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  businessId     String   @map("business_id")
+  customerId     String?  @map("customer_id")
+  sessionId      String?  @unique @map("session_id")
+  createdById    String?  @map("created_by_id")
+  source         String   @default("kasir") // whatsapp, kasir
+  orderType      String   @default("dine-in") @map("order_type") // dine-in, takeaway, delivery
+  totalAmount    Decimal  @map("total_amount") @db.Decimal(12, 2)
+  discountAmount Decimal? @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  taxAmount      Decimal? @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  paymentMethod  String?  @default("cash") @map("payment_method") // cash, qris, edc
+  paidAmount     Decimal? @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  changeAmount   Decimal? @default(0) @map("change_amount") @db.Decimal(12, 2)
+  status         String   @default("pending") // pending, paid, preparing, completed, cancelled
+  createdAt      DateTime @default(now()) @map("created_at")
 
   // Relations
   business   Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -230,14 +236,16 @@ model OrderItem {
 // ==========================================
 
 model Ingredient {
-  id                  String   @id @default(uuid())
-  businessId          String   @map("business_id")
-  preferredSupplierId String?  @map("preferred_supplier_id")
+  id                  String    @id @default(uuid())
+  businessId          String    @map("business_id")
+  preferredSupplierId String?   @map("preferred_supplier_id")
   name                String
-  unit                String   // gram, ml, pcs, kg
-  stock               Decimal  @default(0) @db.Decimal(12, 3)
-  minStock            Decimal  @default(0) @map("min_stock") @db.Decimal(12, 3)
+  unit                String    // gram, ml, pcs, kg
+  stock               Decimal   @default(0) @db.Decimal(12, 3)
+  minStock            Decimal   @default(0) @map("min_stock") @db.Decimal(12, 3)
   category            String?
+  locationRack        String?   @map("location_rack")
+  expiryDate          DateTime? @map("expiry_date")
 
   // Relations
   business           Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -340,13 +348,18 @@ model SupplierItem {
 }
 
 model PurchaseOrder {
-  id          String   @id @default(uuid())
-  businessId  String   @map("business_id")
-  supplierId  String   @map("supplier_id")
-  createdById String?  @map("created_by_id")
-  status      String   @default("draft") // draft, sent, confirmed, shipped, received, cancelled
-  totalAmount Decimal  @default(0) @map("total_amount") @db.Decimal(12, 2)
-  createdAt   DateTime @default(now()) @map("created_at")
+  id           String    @id @default(uuid())
+  businessId   String    @map("business_id")
+  supplierId   String    @map("supplier_id")
+  createdById  String?   @map("created_by_id")
+  status       String    @default("draft") // draft, sent, confirmed, shipped, received, cancelled
+  totalAmount  Decimal   @default(0) @map("total_amount") @db.Decimal(12, 2)
+  deliveryNote String?   @map("delivery_note")
+  driverInfo   String?   @map("driver_info")
+  qcStatus     String?   @default("pending") @map("qc_status") // pending, passed, partial, rejected
+  qcNotes      String?   @map("qc_notes") @db.Text
+  receivedAt   DateTime? @map("received_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   // Relations
   business           Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)

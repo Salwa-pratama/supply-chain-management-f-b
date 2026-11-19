@@ -1,8 +1,15 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = { title: "Dashboard Bisnis | BAPER SCM" };
+import Link from "next/link";
+import { useOwnerOverview } from "@/features/dashboard/hooks/use-dashboard";
+
+function rupiah(val: number) {
+  return "Rp " + Math.round(val || 0).toLocaleString("id-ID");
+}
 
 export default function PemilikDashboardPage() {
+  const { data: overview, isLoading } = useOwnerOverview();
+
   return (
     <div className="flex flex-col gap-6">
       {/* 1. KARTU SAMBUTAN & STATUS OPERASIONAL TOKO */}
@@ -48,36 +55,37 @@ export default function PemilikDashboardPage() {
               </div>
             </div>
             <div className="mt-4">
-              <div className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">Rp 84.650.000</div>
+              <div className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
+                {isLoading ? "Memuat..." : rupiah(overview?.revenueThisMonth || 0)}
+              </div>
               <div className="flex items-center gap-1.5 mt-2">
                 <span className="inline-flex items-center gap-0.5 text-label-sm font-label-sm text-primary bg-secondary-container px-2 py-0.5 rounded-full font-bold">
                   <span className="material-symbols-outlined text-[14px]">trending_up</span>
                   {" "}
-                  +14.8%
+                  Real-time
                 </span>
-                <span className="font-body-sm text-body-sm text-tertiary">vs bulan lalu</span>
+                <span className="font-body-sm text-body-sm text-tertiary">Database Live</span>
               </div>
             </div>
           </div>
           {/* Card 2: Pesanan Baru Hari Ini */}
           <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md text-tertiary">Pesanan Baru Hari Ini</span>
+              <span className="font-label-md text-label-md text-tertiary">Pesanan Bulan Ini</span>
               <div className="p-2 rounded-xl bg-secondary-container/50 text-primary">
                 <span className="material-symbols-outlined text-[20px]">shopping_cart_checkout</span>
               </div>
             </div>
             <div className="mt-4">
               <div className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
-                142
+                {isLoading ? "..." : (overview?.transactionsThisMonth || 0)}
                 {" "}
                 <span className="font-headline-sm text-headline-sm font-normal text-tertiary">Pesanan</span>
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <span className="font-label-sm text-label-sm text-primary bg-secondary-container/60 px-2 py-0.5 rounded-md font-semibold">
-                  98 Lunas
+                  Tersinkronisasi POS
                 </span>
-                <span className="font-label-sm text-label-sm text-[#B7791F] bg-[#FFF9E6] px-2 py-0.5 rounded-md font-semibold">44 Menunggu</span>
               </div>
             </div>
           </div>
@@ -91,13 +99,13 @@ export default function PemilikDashboardPage() {
             </div>
             <div className="mt-4">
               <div className="font-headline-lg text-headline-lg text-error font-bold tracking-tight">
-                3
+                {isLoading ? "..." : (overview?.criticalStockCount || 0)}
                 {" "}
                 <span className="font-headline-sm text-headline-sm font-normal text-tertiary">Bahan Baku</span>
               </div>
               <div className="flex items-center gap-1.5 mt-2 overflow-hidden text-ellipsis whitespace-nowrap">
                 <span className="text-[11px] font-label-sm text-error bg-error-container/60 px-2 py-0.5 rounded-full font-semibold">
-                  Biji Gayo, Susu 1L, Cup 16oz
+                  Perlu PO Baru ke Pemasok
                 </span>
               </div>
             </div>
@@ -112,13 +120,13 @@ export default function PemilikDashboardPage() {
             </div>
             <div className="mt-4">
               <div className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
-                2
+                {isLoading ? "..." : (overview?.activePoCount || 0)}
                 {" "}
-                <span className="font-headline-sm text-headline-sm font-normal text-tertiary">Pemasok</span>
+                <span className="font-headline-sm text-headline-sm font-normal text-tertiary">PO Aktif</span>
               </div>
               <div className="flex items-center gap-1.5 mt-2">
                 <span className="font-label-sm text-label-sm text-primary bg-secondary-container px-2 py-0.5 rounded-full font-semibold">
-                  Dalam Perjalanan (ETA 15:30)
+                  Diproses Mitra Pemasok
                 </span>
               </div>
             </div>
@@ -384,165 +392,83 @@ export default function PemilikDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md">
-                {/* Row 1 */}
-                <tr className="h-14 hover:bg-[#F9FBFA] transition-colors">
-                  <td className="px-4 font-label-lg text-label-lg font-bold text-primary">#BPR-8821</td>
-                  <td className="px-4 text-tertiary text-body-sm font-body-sm">14:26 WIB</td>
-                  <td className="px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-secondary-container text-primary font-bold flex items-center justify-center text-[12px]">
-                        DW
-                      </div>
-                      <span className="font-label-md text-label-md font-semibold text-on-surface">Dimas Wicaksono</span>
-                    </div>
-                  </td>
-                  <td className="px-4 text-body-sm font-body-sm text-on-surface">2x Kopi Kenangan Mantan (Oatmilk), 1x Donat Cokelat</td>
-                  <td className="px-4 font-label-lg text-label-lg font-bold text-on-surface">Rp 58.000</td>
-                  <td className="px-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#E8F3EC] text-[#137A48] border border-[#137A48]/20 font-semibold">
-                      <span className="material-symbols-outlined text-[14px]">check</span>
-                      {" "}
-                      Lunas (QRIS)
-                    </span>
-                  </td>
-                  <td className="px-4">
-                    <span className="inline-flex items-center gap-1.5 text-label-sm font-label-sm font-medium text-tertiary bg-surface-container-low px-2.5 py-1 rounded-lg">
-                      <span className="material-symbols-outlined text-[15px] text-primary">soup_kitchen</span>
-                      {" "}
-                      Sedang Disiapkan
-                    </span>
-                  </td>
-                  <td className="px-4 text-right">
-                    <button className="p-1.5 rounded-lg text-tertiary hover:text-primary hover:bg-surface-container-low" title="Detail Pesanan">
-                      <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                    </button>
-                  </td>
-                </tr>
-                {/* Row 2 */}
-                <tr className="h-14 hover:bg-[#F9FBFA] transition-colors">
-                  <td className="px-4 font-label-lg text-label-lg font-bold text-primary">#BPR-8820</td>
-                  <td className="px-4 text-tertiary text-body-sm font-body-sm">14:15 WIB</td>
-                  <td className="px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-surface-container-high text-on-surface-variant font-bold flex items-center justify-center text-[12px]">
-                        AR
-                      </div>
-                      <span className="font-label-md text-label-md font-semibold text-on-surface">Anisa Rahma</span>
-                    </div>
-                  </td>
-                  <td className="px-4 text-body-sm font-body-sm text-on-surface">1x Americano Hot, 1x Croissant Butter</td>
-                  <td className="px-4 font-label-lg text-label-lg font-bold text-on-surface">Rp 48.000</td>
-                  <td className="px-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#E8F3EC] text-[#137A48] border border-[#137A48]/20 font-semibold">
-                      <span className="material-symbols-outlined text-[14px]">check</span>
-                      {" "}
-                      Lunas (Tunai)
-                    </span>
-                  </td>
-                  <td className="px-4">
-                    <span className="inline-flex items-center gap-1.5 text-label-sm font-label-sm font-medium text-[#137A48] bg-[#E8F3EC] px-2.5 py-1 rounded-lg">
-                      <span className="material-symbols-outlined text-[15px]">done_all</span>
-                      {" "}
-                      Siap Pick-up
-                    </span>
-                  </td>
-                  <td className="px-4 text-right">
-                    <button className="p-1.5 rounded-lg text-tertiary hover:text-primary hover:bg-surface-container-low">
-                      <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                    </button>
-                  </td>
-                </tr>
-                {/* Row 3 */}
-                <tr className="h-14 hover:bg-[#F9FBFA] transition-colors">
-                  <td className="px-4 font-label-lg text-label-lg font-bold text-primary">#BPR-8819</td>
-                  <td className="px-4 text-tertiary text-body-sm font-body-sm">14:02 WIB</td>
-                  <td className="px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-secondary-container text-primary font-bold flex items-center justify-center text-[12px]">
-                        RS
-                      </div>
-                      <span className="font-label-md text-label-md font-semibold text-on-surface">Reza S. (GrabFood)</span>
-                    </div>
-                  </td>
-                  <td className="px-4 text-body-sm font-body-sm text-on-surface">4x Avocado Coffee, 2x Toast Choco</td>
-                  <td className="px-4 font-label-lg text-label-lg font-bold text-on-surface">Rp 164.000</td>
-                  <td className="px-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#E8F3EC] text-[#137A48] border border-[#137A48]/20 font-semibold">
-                      <span className="material-symbols-outlined text-[14px]">check</span>
-                      {" "}
-                      Lunas (App Integration)
-                    </span>
-                  </td>
-                  <td className="px-4">
-                    <span className="inline-flex items-center gap-1.5 text-label-sm font-label-sm font-medium text-[#137A48] bg-[#E8F3EC] px-2.5 py-1 rounded-lg">
-                      <span className="material-symbols-outlined text-[15px]">two_wheeler</span>
-                      {" "}
-                      Driver Menjemput
-                    </span>
-                  </td>
-                  <td className="px-4 text-right">
-                    <button className="p-1.5 rounded-lg text-tertiary hover:text-primary hover:bg-surface-container-low">
-                      <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                    </button>
-                  </td>
-                </tr>
-                {/* Row 4 */}
-                <tr className="h-14 hover:bg-[#F9FBFA] transition-colors">
-                  <td className="px-4 font-label-lg text-label-lg font-bold text-primary">#BPR-8818</td>
-                  <td className="px-4 text-tertiary text-body-sm font-body-sm">13:54 WIB</td>
-                  <td className="px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-surface-container-high text-on-surface-variant font-bold flex items-center justify-center text-[12px]">
-                        FN
-                      </div>
-                      <span className="font-label-md text-label-md font-semibold text-on-surface">Fahmi Nugraha</span>
-                    </div>
-                  </td>
-                  <td className="px-4 text-body-sm font-body-sm text-on-surface">1x Hazelnut Latte (Large)</td>
-                  <td className="px-4 font-label-lg text-label-lg font-bold text-on-surface">Rp 28.000</td>
-                  <td className="px-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#FFF9E6] text-[#B7791F] border border-[#B7791F]/20 font-semibold">
-                      <span className="material-symbols-outlined text-[14px]">schedule</span>
-                      {" "}
-                      Menunggu Bayar
-                    </span>
-                  </td>
-                  <td className="px-4">
-                    <span className="inline-flex items-center gap-1.5 text-label-sm font-label-sm font-medium text-tertiary bg-surface-container-low px-2.5 py-1 rounded-lg">
-                      <span className="material-symbols-outlined text-[15px]">hourglass_empty</span>
-                      {" "}
-                      Menunggu Kasir
-                    </span>
-                  </td>
-                  <td className="px-4 text-right">
-                    <button className="p-1.5 rounded-lg text-tertiary hover:text-primary hover:bg-surface-container-low">
-                      <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                    </button>
-                  </td>
-                </tr>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-tertiary">
+                      <span className="material-symbols-outlined text-3xl animate-spin text-primary">progress_activity</span>
+                      <p className="mt-1 text-body-sm">Memuat transaksi terkini...</p>
+                    </td>
+                  </tr>
+                ) : overview?.recentOrders && overview.recentOrders.length > 0 ? (
+                  overview.recentOrders.map((order) => {
+                    const itemsText = order.orderItems
+                      ?.map((item) => `${item.quantity}x ${item.product?.name || "Item"}`)
+                      .join(", ") || "-";
+                    const waktu = new Date(order.createdAt).toLocaleTimeString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                    const initials = (order.createdBy?.name || "CS").slice(0, 2).toUpperCase();
+
+                    return (
+                      <tr key={order.id} className="h-14 hover:bg-[#F9FBFA] transition-colors">
+                        <td className="px-4 font-mono font-bold text-primary">
+                          #TRX-{order.id.slice(0, 8).toUpperCase()}
+                        </td>
+                        <td className="px-4 text-tertiary text-body-sm font-body-sm">{waktu} WIB</td>
+                        <td className="px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-secondary-container text-primary font-bold flex items-center justify-center text-[12px]">
+                              {initials}
+                            </div>
+                            <span className="font-label-md text-label-md font-semibold text-on-surface">
+                              {order.createdBy?.name || "Pelanggan POS"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 text-body-sm font-body-sm text-on-surface max-w-[280px] truncate" title={itemsText}>
+                          {itemsText}
+                        </td>
+                        <td className="px-4 font-label-lg text-label-lg font-bold text-on-surface">
+                          {rupiah(Number(order.totalAmount))}
+                        </td>
+                        <td className="px-4">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#E8F3EC] text-[#137A48] border border-[#137A48]/20 font-semibold uppercase">
+                            <span className="material-symbols-outlined text-[14px]">check</span>
+                            {" "}
+                            {order.paymentMethod || "Lunas"}
+                          </span>
+                        </td>
+                        <td className="px-4">
+                          <span className="inline-flex items-center gap-1.5 text-label-sm font-label-sm font-medium text-[#137A48] bg-[#E8F3EC] px-2.5 py-1 rounded-lg">
+                            <span className="material-symbols-outlined text-[15px]">done_all</span>
+                            {" "}
+                            {order.status === "completed" ? "Selesai" : "Diproses"}
+                          </span>
+                        </td>
+                        <td className="px-4 text-right">
+                          <button className="p-1.5 rounded-lg text-tertiary hover:text-primary hover:bg-surface-container-low" title="Detail Pesanan">
+                            <span className="material-symbols-outlined text-[18px]">visibility</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-tertiary">
+                      Belum ada riwayat transaksi hari ini.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
           {/* Pagination / Footer Table */}
           <div className="flex items-center justify-between pt-4 mt-2 border-t border-outline-variant/25">
-            <span className="font-body-sm text-body-sm text-tertiary">Menampilkan 4 dari 142 pesanan hari ini</span>
-            <div className="flex items-center gap-2">
-              <button className="px-3 py-1 rounded-lg text-label-md font-label-md border border-outline-variant/40 text-tertiary hover:bg-surface-container-low transition-colors">
-                Sebelumnya
-              </button>
-              <button className="px-3 py-1 rounded-lg text-label-md font-label-md bg-primary-container text-surface-container-lowest font-bold">
-                1
-              </button>
-              <button className="px-3 py-1 rounded-lg text-label-md font-label-md border border-outline-variant/40 text-on-surface hover:bg-surface-container-low transition-colors">
-                2
-              </button>
-              <button className="px-3 py-1 rounded-lg text-label-md font-label-md border border-outline-variant/40 text-on-surface hover:bg-surface-container-low transition-colors">
-                3
-              </button>
-              <button className="px-3 py-1 rounded-lg text-label-md font-label-md border border-outline-variant/40 text-tertiary hover:bg-surface-container-low transition-colors">
-                Selanjutnya
-              </button>
-            </div>
+            <span className="font-body-sm text-body-sm text-tertiary">
+              Menampilkan {overview?.recentOrders?.length || 0} pesanan terkini
+            </span>
           </div>
         </div>
         {/* 5. TOMBOL AKSI CEPAT (BOTTOM FLOATING QUICK ACTION BAR) */}
@@ -558,20 +484,29 @@ export default function PemilikDashboardPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             {/* Aksi 1: Buat Pesanan Pasokan (PO Baru) */}
-            <button className="flex-1 sm:flex-initial h-12 bg-primary-container hover:bg-primary text-surface-container-lowest font-label-lg text-label-lg px-5 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98]">
+            <Link
+              href="/pemilik/pesanan-po"
+              className="flex-1 sm:flex-initial h-12 bg-primary-container hover:bg-primary text-surface-container-lowest font-label-lg text-label-lg px-5 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98]"
+            >
               <span className="material-symbols-outlined text-[20px]">add_business</span>
               <span>Buat Pesanan Pasokan (PO Baru)</span>
-            </button>
+            </Link>
             {/* Aksi 2: Tambah Produk */}
-            <button className="flex-1 sm:flex-initial h-12 bg-surface-container-lowest hover:bg-[#E8F3EC] text-on-surface border border-[#94B9A9] font-label-lg text-label-lg px-5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+            <Link
+              href="/pemilik/produk"
+              className="flex-1 sm:flex-initial h-12 bg-surface-container-lowest hover:bg-[#E8F3EC] text-on-surface border border-[#94B9A9] font-label-lg text-label-lg px-5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+            >
               <span className="material-symbols-outlined text-[20px] text-primary">post_add</span>
-              <span>Tambah Produk</span>
-            </button>
+              <span>Kelola Produk & BOM</span>
+            </Link>
             {/* Aksi 3: Lihat Rekap Penjualan */}
-            <button className="flex-1 sm:flex-initial h-12 bg-surface-container-lowest hover:bg-[#E8F3EC] text-on-surface border border-[#94B9A9] font-label-lg text-label-lg px-5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+            <Link
+              href="/pemilik/laporan"
+              className="flex-1 sm:flex-initial h-12 bg-surface-container-lowest hover:bg-[#E8F3EC] text-on-surface border border-[#94B9A9] font-label-lg text-label-lg px-5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+            >
               <span className="material-symbols-outlined text-[20px] text-primary">receipt</span>
-              <span>Lihat Rekap Penjualan</span>
-            </button>
+              <span>Lihat Laporan SCM</span>
+            </Link>
           </div>
         </div>
       </div>

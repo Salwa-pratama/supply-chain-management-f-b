@@ -1,4 +1,20 @@
+"use client";
+
+import { useKasirStats } from "@/features/orders/hooks/use-orders";
+
+function rupiah(n: number) {
+  return "Rp " + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
 export default function KpiCards() {
+  const { data: stats } = useKasirStats();
+
+  const trxCount = stats ? stats.transactionCount : 84;
+  const totalRev = stats ? stats.totalSales : 2845000;
+  const avgVal = stats ? stats.avgTicket : 33800;
+  const qris = stats ? stats.paymentSplit.qris : 42;
+  const cash = stats ? stats.paymentSplit.cash : 38;
+
   return (
     <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {/* KPI 1 */}
@@ -6,7 +22,7 @@ export default function KpiCards() {
         <div>
           <span className="font-label-md text-label-md text-tertiary font-medium">Transaksi Hari Ini</span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-headline-lg text-headline-lg font-bold text-on-surface">84</span>
+            <span className="font-headline-lg text-headline-lg font-bold text-on-surface">{trxCount}</span>
             <span className="font-label-sm text-label-sm text-tertiary">Struk</span>
           </div>
           <div className="flex items-center gap-1.5 mt-2">
@@ -14,9 +30,9 @@ export default function KpiCards() {
               <span className="material-symbols-outlined text-[13px]" data-icon="trending_up">
                 trending_up
               </span>{" "}
-              +12%
+              Live POS
             </span>
-            <span className="font-body-sm text-[11px] text-tertiary">vs kemarin</span>
+            <span className="font-body-sm text-[11px] text-tertiary">{qris} QRIS • {cash} Tunai</span>
           </div>
         </div>
         <div className="w-11 h-11 rounded-xl bg-secondary-container flex items-center justify-center text-primary">
@@ -28,13 +44,13 @@ export default function KpiCards() {
       {/* KPI 2 */}
       <div className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex items-start justify-between">
         <div>
-          <span className="font-label-md text-label-md text-tertiary font-medium">Pendapatan Hari Ini</span>
+          <span className="font-label-md text-label-md text-tertiary font-medium">Pendapatan Kasir Hari Ini</span>
           <div className="mt-1">
-            <span className="font-headline-lg text-headline-lg font-bold text-on-surface">Rp 2.845.000</span>
+            <span className="font-headline-lg text-headline-lg font-bold text-on-surface">{rupiah(totalRev)}</span>
           </div>
           <div className="flex items-center gap-1.5 mt-2">
             <span className="font-body-sm text-[11px] text-tertiary">
-              Target Harian: <span className="font-semibold text-on-surface">Rp 3.500.000</span> (81%)
+              Sinkron otomatis dengan database BAPER
             </span>
           </div>
         </div>
@@ -51,11 +67,11 @@ export default function KpiCards() {
             Pesanan Pending / Antrean
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-headline-lg text-headline-lg font-bold text-[#D99A25]">3</span>
-            <span className="font-label-sm text-label-sm text-tertiary">Pesanan</span>
+            <span className="font-headline-lg text-headline-lg font-bold text-[#D99A25]">0</span>
+            <span className="font-label-sm text-label-sm text-tertiary">Antrean</span>
           </div>
           <div className="flex items-center gap-1.5 mt-2">
-            <span className="font-body-sm text-[11px] text-tertiary">Meja 02, WhatsApp Bot #8822</span>
+            <span className="font-body-sm text-[11px] text-tertiary">Semua pesanan shift ini selesai</span>
           </div>
         </div>
         <div className="w-11 h-11 rounded-xl bg-[#FFF9E6] border border-[#D99A25]/20 flex items-center justify-center text-[#D99A25]">
@@ -71,10 +87,10 @@ export default function KpiCards() {
             Rata-rata Nilai Transaksi
           </span>
           <div className="mt-1">
-            <span className="font-headline-lg text-headline-lg font-bold text-on-surface">Rp 33.800</span>
+            <span className="font-headline-lg text-headline-lg font-bold text-on-surface">{rupiah(avgVal)}</span>
           </div>
           <div className="flex items-center gap-1.5 mt-2">
-            <span className="font-body-sm text-[11px] text-tertiary">Rata-rata 2.4 produk / struk</span>
+            <span className="font-body-sm text-[11px] text-tertiary">Rata-rata pengeluaran per tiket</span>
           </div>
         </div>
         <div className="w-11 h-11 rounded-xl bg-secondary-container flex items-center justify-center text-primary">

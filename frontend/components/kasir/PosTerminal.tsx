@@ -7,8 +7,10 @@ import KasirHeader from "@/components/kasir/KasirHeader";
 import KpiCards from "@/components/kasir/KpiCards";
 import HistoryModal from "@/components/kasir/HistoryModal";
 import ProductImage from "@/components/kasir/ProductImage";
+import { useProducts } from "@/features/products/hooks/use-products";
+import { useCreateOrder } from "@/features/orders/hooks/use-orders";
 
-type CartLine = { id: number; qty: number };
+type CartLine = { id: string | number; qty: number };
 type OrderType = "dine-in" | "takeaway" | "delivery";
 type Method = "cash" | "qris" | "edc";
 
@@ -87,6 +89,34 @@ function noTrx(seq: number) {
 }
 
 export default function PosTerminal() {
+  const { data: dbProducts } = useProducts();
+  const createOrderMutation = useCreateOrder();
+
+  const productCatalog: Product[] = useMemo(() => {
+    if (dbProducts && dbProducts.length > 0) {
+      return dbProducts.map((p, idx) => {
+        const matched = PRODUCTS.find(
+          (mp) =>
+            mp.name.toLowerCase().includes(p.name.toLowerCase()) ||
+            p.name.toLowerCase().includes(mp.name.toLowerCase())
+        );
+        const cat = ((p.category || "minuman").toLowerCase()) as Category;
+        return {
+          id: p.id,
+          name: p.name,
+          desc: p.description || "Menu spesial racikan khas BAPER",
+          price: Number(p.price) || 0,
+          stock: 45,
+          stockLabel: "Stok Tersedia",
+          category: cat,
+          categoryLabel: p.category ? p.category.charAt(0).toUpperCase() + p.category.slice(1) : "Menu",
+          img: matched ? matched.img : PRODUCTS[idx % PRODUCTS.length]?.img || "",
+        };
+      });
+    }
+    return PRODUCTS;
+  }, [dbProducts]);
+
   const [cart, setCart] = useState<CartLine[]>([
     { id: 4, qty: 2 },
     { id: 1, qty: 1 },
@@ -117,9 +147,9 @@ export default function PosTerminal() {
   }, []);
 
   // ---------- Perhitungan ----------
-  const produkById = useMemo(() => new Map(PRODUCTS.map((p) => [p.id, p])), []);
+  const produkById = useMemo(() => new Map(productCatalog.map((p) => [String(p.id), p])), [productCatalog]);
   const lines = cart.flatMap((l) => {
-    const product = produkById.get(l.id);
+    const product = produkById.get(String(l.id));
     return product ? [{ ...l, product }] : [];
   });
   const subtotal = lines.reduce((s, l) => s + l.product.price * l.qty, 0);
@@ -134,7 +164,7 @@ export default function PosTerminal() {
 
   // ---------- Katalog ----------
   const q = search.trim().toLowerCase();
-  const tampil = PRODUCTS.filter((p) => {
+  const tampil = productCatalog.filter((p) => {
     const cocokKategori = category === "all" || p.category === category;
     const cocokNama = p.name.toLowerCase().includes(q);
     const cocokStok =
@@ -144,23 +174,23 @@ export default function PosTerminal() {
     return cocokKategori && cocokNama && cocokStok;
   });
   const hitung = (id: "all" | Category) =>
-    id === "all" ? PRODUCTS.length : PRODUCTS.filter((p) => p.category === id).length;
+    id === "all" ? productCatalog.length : productCatalog.filter((p) => p.category === id).length;
 
   // ---------- Aksi keranjang ----------
   function tambah(p: Product) {
     if (p.stock <= 0) return;
-    const ada = cart.find((l) => l.id === p.id);
+    const ada = cart.find((l) => String(l.id) === String(p.id));
     if (ada && ada.qty >= p.stock) {
       showToast(`Stok ${p.name} hanya tersisa ${p.stock}.`);
       return;
     }
     setCart(
-      ada ? cart.map((l) => (l.id === p.id ? { ...l, qty: l.qty + 1 } : l)) : [...cart, { id: p.id, qty: 1 }],
+      ada ? cart.map((l) => (String(l.id) === String(p.id) ? { ...l, qty: l.qty + 1 } : l)) : [...cart, { id: p.id, qty: 1 }],
     );
   }
-  function ubahQty(id: number, delta: number) {
-    const item = cart.find((l) => l.id === id);
-    const p = produkById.get(id);
+  function ubahQty(id: string | number, delta: number) {
+    const item = cart.find((l) => String(l.id) === String(id));
+    const p = produkById.get(String(id));
     if (!item || !p) return;
     const qtyBaru = item.qty + delta;
     if (qtyBaru <= 0) return hapus(id);
@@ -168,10 +198,10 @@ export default function PosTerminal() {
       showToast(`Stok ${p.name} hanya tersisa ${p.stock}.`);
       return;
     }
-    setCart(cart.map((l) => (l.id === id ? { ...l, qty: qtyBaru } : l)));
+    setCart(cart.map((l) => (String(l.id) === String(id) ? { ...l, qty: qtyBaru } : l)));
   }
-  function hapus(id: number) {
-    setCart(cart.filter((l) => l.id !== id));
+  function hapus(id: string | number) {
+    setCart(cart.filter((l) => String(l.id) !== String(id)));
   }
   function kosongkan() {
     setCart([]);
@@ -192,23 +222,48 @@ export default function PosTerminal() {
   }, [cart.length, showToast]);
 
   function selesaikan() {
-    if (!bisaBayar) return;
-    setReceipt({
-      no: noTrx(seq),
-      waktu: waktuSekarang(),
-      pelanggan: `${pelangganTampil} (${ORDER_LABEL[orderType]})`,
-      jenis: ORDER_LABEL[orderType],
-      lines: lines.map((l) => ({ name: l.product.name, qty: l.qty, price: l.product.price })),
-      subtotal,
-      discount,
-      tax,
-      total,
-      metode: METHOD_LABEL[method],
-      dibayar: method === "cash" ? cashNum : total,
-      kembali: method === "cash" ? kembalian : 0,
-    });
-    setPayOpen(false);
-    // TODO: kirim transaksi ke API backend (Go): POST /transaksi
+    if (!bisaBayar || createOrderMutation.isPending) return;
+
+    createOrderMutation.mutate(
+      {
+        orderType,
+        totalAmount: total,
+        discountAmount: discount,
+        taxAmount: tax,
+        paymentMethod: method,
+        paidAmount: method === "cash" ? cashNum : total,
+        changeAmount: method === "cash" ? kembalian : 0,
+        status: "completed",
+        items: lines.map((l) => ({
+          productId: String(l.product.id),
+          quantity: l.qty,
+          price: l.product.price,
+        })),
+      },
+      {
+        onSuccess: (order) => {
+          setReceipt({
+            no: order.id ? `#TRX-${order.id.slice(0, 8).toUpperCase()}` : noTrx(seq),
+            waktu: waktuSekarang(),
+            pelanggan: `${pelangganTampil} (${ORDER_LABEL[orderType]})`,
+            jenis: ORDER_LABEL[orderType],
+            lines: lines.map((l) => ({ name: l.product.name, qty: l.qty, price: l.product.price })),
+            subtotal,
+            discount,
+            tax,
+            total,
+            metode: METHOD_LABEL[method],
+            dibayar: method === "cash" ? cashNum : total,
+            kembali: method === "cash" ? kembalian : 0,
+          });
+          setPayOpen(false);
+          showToast("✅ Transaksi lunas! Stok bahan baku otomatis dipotong secara real-time.");
+        },
+        onError: (err) => {
+          showToast(`❌ Gagal menyimpan transaksi: ${err.message}`);
+        },
+      }
+    );
   }
 
   function transaksiBaru() {
@@ -801,14 +856,18 @@ export default function PosTerminal() {
               </button>
               <button
                 type="button"
-                disabled={!bisaBayar}
+                disabled={!bisaBayar || createOrderMutation.isPending}
                 onClick={selesaikan}
                 className={`h-11 px-6 rounded-xl bg-primary-container hover:bg-[#0D6038] text-on-primary font-headline-sm text-headline-sm font-bold flex items-center gap-2 shadow-md shadow-primary-container/20 ${
-                  bisaBayar ? "" : "opacity-50 cursor-not-allowed"
+                  bisaBayar && !createOrderMutation.isPending ? "" : "opacity-50 cursor-not-allowed"
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                <span>Selesaikan Transaksi (LUNAS)</span>
+                <span className="material-symbols-outlined text-[20px]">
+                  {createOrderMutation.isPending ? "hourglass_top" : "check_circle"}
+                </span>
+                <span>
+                  {createOrderMutation.isPending ? "Menyimpan Transaksi..." : "Selesaikan Transaksi (LUNAS)"}
+                </span>
               </button>
             </div>
           </div>
