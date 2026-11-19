@@ -4,6 +4,7 @@ import {
   fetchMySupplierCatalog,
   fetchMySupplierProfile,
   fetchSuppliers,
+  updateMySupplierProfile,
 } from "../api/suppliers-api";
 import { CreateSupplierItemPayload, SupplierData, SupplierItem } from "../types/suppliers.types";
 import { ApiError } from "@/lib/api-client";
@@ -35,6 +36,17 @@ export function useCreateSupplierItem() {
     mutationFn: (payload) => createSupplierItem(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supplier", "my-catalog"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+    },
+  });
+}
+
+export function useUpdateSupplierProfile() {
+  const queryClient = useQueryClient();
+  return useMutation<SupplierData, ApiError, { name?: string; phone?: string; address?: string; category?: string }>({
+    mutationFn: (payload) => updateMySupplierProfile(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier", "my-profile"] });
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
     },
   });

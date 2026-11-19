@@ -25,3 +25,16 @@ export async function toggleMemberStatus(memberId: string): Promise<BusinessMemb
     method: "PATCH",
   });
 }
+
+export async function updateMyBusiness(payload: {
+  name?: string;
+  address?: string;
+  phoneBusiness?: string;
+  description?: string;
+  category?: string;
+}): Promise<BusinessData> {
+  return apiClient<BusinessData>("/business/my", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}

@@ -28,6 +28,10 @@ async function main() {
   const hashPemasok = await bcrypt.hash("Pemasok#2025", saltRounds);
 
   // 1. Bersihkan data lama jika ada
+  await prisma.branchTransferItem.deleteMany();
+  await prisma.branchTransfer.deleteMany();
+  await prisma.kitchenBatchItem.deleteMany();
+  await prisma.kitchenBatch.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.customer.deleteMany();
@@ -556,6 +560,101 @@ async function main() {
   });
 
   console.log("💰 Transaksi Kasir awal berhasil dibuat.");
+
+  // 12. Batch Produksi Kitchen
+  await prisma.kitchenBatch.create({
+    data: {
+      businessId: business.id,
+      createdById: gudangUser.id,
+      batchNumber: "BATCH-20261119-01",
+      recipeName: "Cold Brew Extraction Concentrate (30L)",
+      station: "Central Bar Extraction",
+      operator: "Fahmi Nugraha (Barista Lead)",
+      plannedYield: "120 Porsi Cold Brew",
+      actualYield: "118 Porsi",
+      progress: 75,
+      status: "in_progress",
+      notes: "Steeping 14 Jam dengan suhu air 4°C di Chiller B2",
+      items: {
+        create: [
+          { name: "Biji Kopi Arabika Lintong", quantity: 3.5, unit: "kg", ingredientId: ingKopi.id },
+          { name: "Air Filtrasi UV Mineral", quantity: 30, unit: "liter" },
+        ],
+      },
+    },
+  });
+
+  await prisma.kitchenBatch.create({
+    data: {
+      businessId: business.id,
+      createdById: owner.id,
+      batchNumber: "BATCH-20261119-02",
+      recipeName: "Pandan Simple Syrup Concentrate (10L)",
+      station: "Kitchen Syrups & Sauces",
+      operator: "Dewi Lestari (Kitchen Staff)",
+      plannedYield: "10 Botol @ 1 Liter",
+      actualYield: "10 Botol @ 1 Liter",
+      progress: 100,
+      status: "completed",
+      notes: "Lolos QC Rasa & Brix Kemanisan 62%",
+      completedAt: new Date(Date.now() - 7200 * 1000),
+      items: {
+        create: [
+          { name: "Gula Aren Organik Cair", quantity: 5, unit: "liter", ingredientId: ingAren.id },
+          { name: "Ekstrak Pandan Segar Alami", quantity: 200, unit: "gram" },
+        ],
+      },
+    },
+  });
+
+  // 13. Transfer Distribusi Antar Cabang
+  await prisma.branchTransfer.create({
+    data: {
+      businessId: business.id,
+      createdById: gudangUser.id,
+      transferNumber: "TRF-OUT-202611-01",
+      origin: "Central Kitchen Senopati (Hub)",
+      destination: "Cabang Kopi Kenangan SCBD Lot 8",
+      driver: "Wahyu Hidayat (Motor Kurir Hub)",
+      vehicleInfo: "Yamaha NMAX Box (B 4210 SCM)",
+      departureTime: "10:30 WIB",
+      eta: "11:00 WIB (Tiba)",
+      status: "received",
+      notes: "Diterima lengkap oleh Supervisor Outlet SCBD",
+      receivedAt: new Date(Date.now() - 3600 * 1000),
+      items: {
+        create: [
+          { name: "Cold Brew Concentrate", quantity: 20, unit: "liter" },
+          { name: "Sirup Karamel Premium", quantity: 5, unit: "liter" },
+          { name: "Paper Cup 12oz BAPER", quantity: 200, unit: "pcs", ingredientId: ingCup.id },
+        ],
+      },
+    },
+  });
+
+  await prisma.branchTransfer.create({
+    data: {
+      businessId: business.id,
+      createdById: gudangUser.id,
+      transferNumber: "TRF-OUT-202611-02",
+      origin: "Central Kitchen Senopati (Hub)",
+      destination: "Cabang Kopi Kenangan Kemang Raya",
+      driver: "Rudi Hartono (Van Delivery Hub)",
+      vehicleInfo: "Gran Max Blind Van (B 9811 KLC)",
+      departureTime: "13:45 WIB",
+      eta: "14:20 WIB (OTW)",
+      status: "shipping",
+      notes: "Suhu box chiller mobil terjaga 3.5°C",
+      items: {
+        create: [
+          { name: "Fresh Milk Pasteurisasi", quantity: 40, unit: "liter", ingredientId: ingSusu.id },
+          { name: "Biji Kopi Arabika Lintong", quantity: 15, unit: "kg", ingredientId: ingKopi.id },
+        ],
+      },
+    },
+  });
+
+  console.log("🚚 Data batch produksi & distribusi antar gerai berhasil dibuat.");
   console.log("✅ SEEDING SELESAI 100%! Seluruh akun, outlet, menu, resep, dan rantai pasok siap digunakan.");
 }
 

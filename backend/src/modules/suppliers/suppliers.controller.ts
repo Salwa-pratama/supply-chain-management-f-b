@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
@@ -18,6 +18,16 @@ export class SuppliersController {
   async getMyProfile(@CurrentUser("id") userId: string) {
     const data = await this.suppliersService.getMySupplierProfile(userId);
     return ServiceResponse.success("Profil pemasok berhasil dimuat", data);
+  }
+
+  @Patch("my-profile")
+  @ApiOperation({ summary: "Perbarui profil pemasok aktif (Portal Pemasok)" })
+  async updateMyProfile(
+    @CurrentUser("id") userId: string,
+    @Body() dto: { name?: string; phone?: string; address?: string; category?: string }
+  ) {
+    const data = await this.suppliersService.updateMyProfile(userId, dto);
+    return ServiceResponse.success("Profil pemasok berhasil diperbarui", data);
   }
 
   @Get("my-catalog")

@@ -86,6 +86,48 @@ export class ProductsService {
     });
   }
 
+  async update(id: string, dto: Partial<CreateProductDto>, userId: string) {
+    const product = await this.findOne(id, userId);
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.product.update({
+        where: { id: product.id },
+        data: {
+          name: dto.name ?? product.name,
+          description: dto.description ?? product.description,
+          price: dto.price ?? product.price,
+          category: dto.category ?? product.category,
+          isAvailable: dto.isAvailable ?? product.isAvailable,
+        },
+      });
+
+      if (dto.ingredients) {
+        await tx.productIngredient.deleteMany({
+          where: { productId: product.id },
+        });
+
+        if (dto.ingredients.length > 0) {
+          await tx.productIngredient.createMany({
+            data: dto.ingredients.map((ing) => ({
+              productId: product.id,
+              ingredientId: ing.ingredientId,
+              qtyPerUnit: ing.qtyPerUnit,
+            })),
+          });
+        }
+      }
+
+      return tx.product.findUnique({
+        where: { id: product.id },
+        include: {
+          productIngredients: {
+            include: { ingredient: true },
+          },
+        },
+      });
+    });
+  }
+
   async remove(id: string, userId: string) {
     const product = await this.findOne(id, userId);
     await this.prisma.product.delete({

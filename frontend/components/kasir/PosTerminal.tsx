@@ -131,7 +131,27 @@ export default function PosTerminal() {
   const [cash, setCash] = useState("100000");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [antreanOpen, setAntreanOpen] = useState(false);
+  const [heldOrders, setHeldOrders] = useState<
+    {
+      id: string;
+      no: string;
+      customer: string;
+      wa: string;
+      orderType: OrderType;
+      cart: CartLine[];
+      total: number;
+      time: string;
+    }[]
+  >([]);
   const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("baper_held_orders");
+      if (saved) setHeldOrders(JSON.parse(saved));
+    } catch {}
+  }, []);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -203,9 +223,53 @@ export default function PosTerminal() {
     setCart([]);
   }
   function tahan() {
-    showToast(
-      `Pesanan ${noTrx(seq)} telah disimpan (Hold). Anda dapat membukanya kembali di menu Antrean Pesanan.`,
-    );
+    if (cart.length === 0) {
+      showToast("Keranjang belanja kosong! Tidak ada pesanan untuk di-hold.");
+      return;
+    }
+    const newHeld = {
+      id: "HLD-" + Date.now().toString().slice(-6),
+      no: noTrx(seq),
+      customer: customer.trim() || "Pelanggan Umum",
+      wa,
+      orderType,
+      cart: [...cart],
+      total,
+      time: waktuSekarang(),
+    };
+    const updated = [newHeld, ...heldOrders];
+    setHeldOrders(updated);
+    try {
+      localStorage.setItem("baper_held_orders", JSON.stringify(updated));
+    } catch {}
+    setCart([]);
+    setCustomer("");
+    setWa("");
+    setSeq((s) => s + 1);
+    showToast(`Pesanan #${newHeld.no} (${newHeld.customer}) disimpan ke antrean Hold.`);
+  }
+
+  function pulihkanHeldOrder(h: (typeof heldOrders)[0]) {
+    setCart(h.cart);
+    setCustomer(h.customer === "Pelanggan Umum" ? "" : h.customer);
+    setWa(h.wa);
+    setOrderType(h.orderType);
+    const updated = heldOrders.filter((item) => item.id !== h.id);
+    setHeldOrders(updated);
+    try {
+      localStorage.setItem("baper_held_orders", JSON.stringify(updated));
+    } catch {}
+    setAntreanOpen(false);
+    showToast(`Pesanan #${h.no} (${h.customer}) dikembalikan ke kasir.`);
+  }
+
+  function hapusHeldOrder(id: string) {
+    const updated = heldOrders.filter((item) => item.id !== id);
+    setHeldOrders(updated);
+    try {
+      localStorage.setItem("baper_held_orders", JSON.stringify(updated));
+    } catch {}
+    showToast("Pesanan hold berhasil dihapus dari antrean.");
   }
 
   // ---------- Pembayaran ----------
@@ -273,7 +337,8 @@ export default function PosTerminal() {
   }
 
   function cetak() {
-    showToast("Perintah cetak dikirim ke Thermal Printer Epson TM-T82X (USB / LAN). Struk tercetak!");
+    showToast("Mengirim cetak ke Thermal Printer Epson TM-T82X...");
+    window.print();
   }
 
   // ---------- Pintasan keyboard (F4 = bayar, F2 atau / = cari, Esc = tutup) ----------
@@ -495,15 +560,26 @@ export default function PosTerminal() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={kosongkan}
-                    className="text-tertiary hover:text-error text-label-sm font-label-sm flex items-center gap-1 p-1 hover:bg-error-container/20 rounded-lg transition-colors"
-                    title="Kosongkan Keranjang"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
-                    <span>Reset</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAntreanOpen(true)}
+                      className="px-2.5 py-1 rounded-xl bg-secondary-container text-primary font-bold text-xs flex items-center gap-1 hover:bg-[#D4E8DC] transition-colors cursor-pointer"
+                      title="Lihat Pesanan yang Di-Hold"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">pause_circle</span>
+                      <span>Antrean ({heldOrders.length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={kosongkan}
+                      className="text-tertiary hover:text-error text-label-sm font-label-sm flex items-center gap-1 p-1 hover:bg-error-container/20 rounded-lg transition-colors cursor-pointer"
+                      title="Kosongkan Keranjang"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
+                      <span>Reset</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-1 bg-[#E8F3EC] p-1 rounded-xl">
@@ -997,6 +1073,98 @@ export default function PosTerminal() {
       )}
 
       {historyOpen && <HistoryModal onClose={() => setHistoryOpen(false)} />}
+
+      {/* MODAL: Antrean Pesanan Hold */}
+      {antreanOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#172033]/50 backdrop-blur-xs"
+        >
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl border border-outline-variant/30 animate-fade-in overflow-hidden">
+            <div className="p-5 border-b border-outline-variant/30 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-secondary-container text-primary flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[24px]">pause_circle</span>
+                </div>
+                <div>
+                  <h3 className="text-headline-sm font-bold text-on-surface">Antrean Pesanan (Hold)</h3>
+                  <p className="text-xs text-tertiary">Daftar transaksi yang disimpan sementara</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAntreanOpen(false)}
+                className="w-8 h-8 rounded-full hover:bg-surface-container-high flex items-center justify-center text-tertiary hover:text-on-surface cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto flex-1 space-y-3">
+              {heldOrders.length === 0 ? (
+                <div className="text-center py-12 text-tertiary space-y-2">
+                  <span className="material-symbols-outlined text-[48px]">playlist_remove</span>
+                  <p className="font-semibold text-on-surface">Tidak ada antrean pesanan tersimpan</p>
+                  <p className="text-xs">Klik "Hold Pesanan" pada kasir saat pelanggan ingin menambah pesanan nanti.</p>
+                </div>
+              ) : (
+                heldOrders.map((h) => (
+                  <div
+                    key={h.id}
+                    className="p-4 rounded-2xl bg-[#F8FAF9] border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-primary/40 transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-on-surface text-sm">#{h.no}</span>
+                        <span className="text-xs text-primary font-bold bg-[#E8F3EC] px-2 py-0.5 rounded-full">
+                          {h.customer}
+                        </span>
+                        <span className="text-[11px] text-tertiary">({ORDER_LABEL[h.orderType]})</span>
+                      </div>
+                      <div className="text-xs text-tertiary mt-1">
+                        {h.cart.reduce((sum, item) => sum + item.qty, 0)} Items • Waktu: {h.time}
+                      </div>
+                      <div className="text-xs font-mono font-bold text-primary mt-1">
+                        Est. Total: {rupiah(h.total)}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() => hapusHeldOrder(h.id)}
+                        className="p-2 rounded-xl border border-outline-variant/40 hover:bg-error-container hover:text-error text-tertiary transition-colors cursor-pointer"
+                        title="Hapus Pesanan"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => pulihkanHeldOrder(h)}
+                        className="h-9 px-3.5 rounded-xl bg-primary text-white hover:bg-[#0D6038] text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">play_arrow</span>
+                        <span>Lanjutkan Transaksi</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-4 border-t border-outline-variant/30 bg-[#F5F8F6] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setAntreanOpen(false)}
+                className="h-10 px-5 rounded-xl border border-outline-variant/50 text-tertiary hover:bg-white text-xs font-bold cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div

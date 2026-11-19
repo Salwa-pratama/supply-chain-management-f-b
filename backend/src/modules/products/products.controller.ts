@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -47,6 +48,17 @@ export class ProductsController {
   ) {
     const data = await this.productsService.create(dto, userId);
     return ServiceResponse.success("Produk berhasil dibuat", data);
+  }
+
+  @Patch(":id")
+  @ApiOperation({ summary: "Perbarui produk dan resep komposisi (BOM)" })
+  async update(
+    @Param("id") id: string,
+    @Body() dto: Partial<CreateProductDto>,
+    @CurrentUser("id") userId: string
+  ) {
+    const data = await this.productsService.update(id, dto, userId);
+    return ServiceResponse.success("Produk berhasil diperbarui", data);
   }
 
   @Delete(":id")

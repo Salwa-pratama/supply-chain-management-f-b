@@ -27,6 +27,23 @@ export class SuppliersService {
     return supplier;
   }
 
+  async updateMyProfile(
+    userId: string,
+    dto: { name?: string; phone?: string; address?: string; category?: string }
+  ) {
+    const supplier = await this.getMySupplierProfile(userId);
+
+    return this.prisma.supplier.update({
+      where: { id: supplier.id },
+      data: {
+        name: dto.name ?? supplier.name,
+        phone: dto.phone ?? supplier.phone,
+        address: dto.address ?? supplier.address,
+        category: dto.category ?? supplier.category,
+      },
+    });
+  }
+
   /**
    * Ambil seluruh mitra pemasok (untuk pemilik bisnis/gudang)
    */

@@ -116,6 +116,47 @@ export class InventoryService {
     });
   }
 
+  async dispatchToKitchen(
+    dto: { ingredientId: string; quantity: number; station?: string; notes?: string },
+    userId: string
+  ) {
+    const businessId = await this.businessService.getBusinessForUser(userId);
+
+    const ingredient = await this.prisma.ingredient.findFirst({
+      where: { id: dto.ingredientId, businessId },
+    });
+
+    if (!ingredient) {
+      throw new NotFoundException("Bahan baku tidak ditemukan.");
+    }
+
+    const currentStock = Number(ingredient.stock);
+    const newStock = Math.max(0, currentStock - dto.quantity);
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.ingredient.update({
+        where: { id: ingredient.id },
+        data: { stock: newStock },
+      });
+
+      const movement = await tx.stockMovement.create({
+        data: {
+          ingredientId: ingredient.id,
+          createdById: userId,
+          type: "out",
+          qty: dto.quantity,
+          referenceId: `KITCHEN: ${dto.station || "Bar & Kitchen"} (${dto.notes || "Serah Terima Bahan"})`,
+        },
+      });
+
+      return {
+        ingredient: updated,
+        movement,
+        message: `Serah terima ${dto.quantity} ${ingredient.unit} ${ingredient.name} ke ${dto.station || "Kitchen"} berhasil!`,
+      };
+    });
+  }
+
   async getMovements(userId: string) {
     const businessId = await this.businessService.getBusinessForUser(userId);
 

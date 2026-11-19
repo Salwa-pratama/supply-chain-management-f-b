@@ -40,6 +40,16 @@ export class InventoryController {
     return ServiceResponse.success(data.message, data);
   }
 
+  @Post("dispatch-kitchen")
+  @ApiOperation({ summary: "Pengeluaran dan serah terima bahan baku ke kitchen/barista" })
+  async dispatchKitchen(
+    @Body() dto: { ingredientId: string; quantity: number; station?: string; notes?: string },
+    @CurrentUser("id") userId: string
+  ) {
+    const data = await this.inventoryService.dispatchToKitchen(dto, userId);
+    return ServiceResponse.success(data.message, data);
+  }
+
   @Get("movements")
   @ApiOperation({ summary: "Ambil riwayat log mutasi stok bahan (in, out, adjust)" })
   async getMovements(@CurrentUser("id") userId: string) {

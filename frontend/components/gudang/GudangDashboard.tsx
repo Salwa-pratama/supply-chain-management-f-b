@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import GudangHeader from "@/components/gudang/GudangHeader";
 import InventoryTable from "@/components/gudang/InventoryTable";
-import { usePurchaseOrders, useVerifyQc } from "@/features/purchase-orders/hooks/use-purchase-orders";
-import { useInventory, useStockMovements, useStockOpname } from "@/features/inventory/hooks/use-inventory";
+import { usePurchaseOrders, useVerifyQc, useCreatePurchaseOrder } from "@/features/purchase-orders/hooks/use-purchase-orders";
+import { useInventory, useStockMovements, useStockOpname, useCreateIngredient } from "@/features/inventory/hooks/use-inventory";
+import { useSuppliers } from "@/features/suppliers/hooks/use-suppliers";
 
 type QC = { poId: string; vendor: string; item: string; qty: string };
 type Toast = { pesan: string; ikon: string };
@@ -13,6 +14,10 @@ export default function GudangDashboard() {
   const { data: dbItems = [] } = useInventory();
   const { data: dbMovements = [] } = useStockMovements();
   const { data: dbPOs = [] } = usePurchaseOrders();
+  const { data: dbSuppliers = [] } = useSuppliers();
+
+  const createIngredientMutation = useCreateIngredient();
+  const createPoMutation = useCreatePurchaseOrder();
 
   const totalSku = dbItems.length;
   const criticalItems = dbItems.filter(
@@ -36,6 +41,25 @@ export default function GudangDashboard() {
     qty: "25 kg",
   });
   const [opnameOpen, setOpnameOpen] = useState(false);
+  const [opnameSelectedId, setOpnameSelectedId] = useState("");
+  const [opnameActualStock, setOpnameActualStock] = useState(0);
+  const [opnameReason, setOpnameReason] = useState("Temuan Selisih Opname Harian");
+  const [opnameNotes, setOpnameNotes] = useState("");
+
+  const [addItemOpen, setAddItemOpen] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemUnit, setNewItemUnit] = useState("kg");
+  const [newItemCategory, setNewItemCategory] = useState("Kopi & Minuman");
+  const [newItemStock, setNewItemStock] = useState(10);
+  const [newItemMinStock, setNewItemMinStock] = useState(5);
+  const [newItemRack, setNewItemRack] = useState("Rak A-01");
+
+  const [quickPoOpen, setQuickPoOpen] = useState(false);
+  const [quickPoItem, setQuickPoItem] = useState<{ id?: string; name: string; unit: string }>({ name: "", unit: "kg" });
+  const [quickPoSupplierId, setQuickPoSupplierId] = useState("");
+  const [quickPoQty, setQuickPoQty] = useState(25);
+  const [quickPoPrice, setQuickPoPrice] = useState(100000);
+
   const [toast, setToast] = useState<Toast | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -83,7 +107,14 @@ export default function GudangDashboard() {
   }
 
   // ---- Opname ----
-  function openOpnameModal() {
+  function openOpnameModal(item?: any) {
+    if (item && item.id) {
+      setOpnameSelectedId(item.id);
+      setOpnameActualStock(Number(item.stock) || 0);
+    } else if (dbItems.length > 0) {
+      setOpnameSelectedId(dbItems[0].id);
+      setOpnameActualStock(Number(dbItems[0].stock) || 0);
+    }
     setOpnameOpen(true);
   }
   function closeOpnameModal() {
@@ -91,20 +122,104 @@ export default function GudangDashboard() {
   }
   function handleOpnameSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    closeOpnameModal();
-    // TODO: kirim koreksi saldo ke API backend (Go)
-    showToast("Koreksi saldo opname berhasil dicatat ke Log Mutasi!", "sync_saved_locally");
+    if (!opnameSelectedId) return;
+    stockOpnameMutation.mutate(
+      {
+        ingredientId: opnameSelectedId,
+        actualStock: Number(opnameActualStock),
+        notes: `${opnameReason}. ${opnameNotes}`.trim(),
+      },
+      {
+        onSuccess: (res) => {
+          closeOpnameModal();
+          showToast(`Koreksi stok berhasil! Selisih: ${res.diff >= 0 ? "+" : ""}${res.diff}`, "sync_saved_locally");
+        },
+        onError: (err) => {
+          showToast(`Gagal opname: ${err.message}`, "error");
+        },
+      }
+    );
   }
 
-  // ---- PO & permintaan produksi (sementara hanya pemberitahuan) ----
+  // ---- PO & SKU Baru ----
   function triggerQuickPO(namaItem = "Bahan Baku") {
-    showToast(`Membuka form PO Cepat untuk: ${namaItem} ke Vendor Resmi`, "shopping_cart_checkout");
+    const found = dbItems.find((i) => i.name.toLowerCase().includes(namaItem.toLowerCase()));
+    setQuickPoItem({
+      id: found?.id,
+      name: found?.name || namaItem,
+      unit: found?.unit || "kg",
+    });
+    if (dbSuppliers.length > 0) {
+      setQuickPoSupplierId(dbSuppliers[0].id);
+    }
+    setQuickPoOpen(true);
   }
+
+  function handleQuickPoSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!quickPoSupplierId) {
+      showToast("Pilih vendor mitra pemasok!", "error");
+      return;
+    }
+    const totalAmount = Number(quickPoQty) * Number(quickPoPrice);
+    createPoMutation.mutate(
+      {
+        supplierId: quickPoSupplierId,
+        totalAmount,
+        items: [
+          {
+            ingredientId: quickPoItem.id,
+            quantity: Number(quickPoQty),
+            price: Number(quickPoPrice),
+          },
+        ],
+      },
+      {
+        onSuccess: (po) => {
+          setQuickPoOpen(false);
+          showToast(`PO #${po.id.slice(0, 8)} berhasil diterbitkan ke Pemasok!`, "local_shipping");
+        },
+        onError: (err) => {
+          showToast(`Gagal membuat PO: ${err.message}`, "error");
+        },
+      }
+    );
+  }
+
+  function openAddItemModal() {
+    setAddItemOpen(true);
+  }
+
+  function handleAddItemSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newItemName.trim()) {
+      showToast("Nama bahan baku wajib diisi!", "error");
+      return;
+    }
+    createIngredientMutation.mutate(
+      {
+        name: newItemName.trim(),
+        unit: newItemUnit,
+        stock: Number(newItemStock) || 0,
+        minStock: Number(newItemMinStock) || 0,
+        category: newItemCategory,
+        locationRack: newItemRack,
+      },
+      {
+        onSuccess: (item) => {
+          setAddItemOpen(false);
+          setNewItemName("");
+          showToast(`SKU ${item.name} berhasil didaftarkan ke inventaris gudang!`, "add_box");
+        },
+        onError: (err) => {
+          showToast(`Gagal menambah SKU: ${err.message}`, "error");
+        },
+      }
+    );
+  }
+
   function triggerBatchPO() {
     showToast("3 Lembar PO Darurat berhasil dibuat & dikirimkan ke Mitra Pemasok!", "local_shipping");
-  }
-  function openAddItemModal() {
-    showToast("Membuka formulir pendaftaran master SKU baru di katalog gudang", "add_box");
   }
   function approveReq(id: string) {
     showToast(`${id} disetujui! Tim Gudang sedang menyiapkan bahan untuk Kitchen/Barista.`, "task_alt");
@@ -1064,7 +1179,7 @@ export default function GudangDashboard() {
                 </div>
               </div>
               <button
-                className="p-1.5 text-tertiary hover:text-on-surface rounded-xl hover:bg-surface-container-low transition-colors"
+                className="p-1.5 text-tertiary hover:text-on-surface rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer"
                 onClick={closeOpnameModal}
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
@@ -1072,36 +1187,51 @@ export default function GudangDashboard() {
             </div>
             <form className="mt-4 space-y-4" onSubmit={handleOpnameSubmit}>
               <div>
-                <label className="block text-label-md font-label-md text-on-surface mb-1">Pilih Barang</label>
-                <select className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2.5 text-body-md focus:border-primary-container outline-none">
-                  <option>SKU-BPR-001 | Biji Kopi Arabika Lintong (Sistem: 1.8 kg)</option>
-                  <option>SKU-BPR-003 | Sirup Karamel Monin (Sistem: 1.2 Botol)</option>
-                  <option>SKU-BPR-002 | Susu Segar Pasteurisasi (Sistem: 28 Liter)</option>
-                  <option>SKU-BPR-006 | Paper Cup Hot 12oz (Sistem: 1.200 pcs)</option>
+                <label className="block text-label-md font-label-md text-on-surface mb-1">Pilih Barang dari Gudang *</label>
+                <select
+                  value={opnameSelectedId}
+                  onChange={(e) => {
+                    setOpnameSelectedId(e.target.value);
+                    const item = dbItems.find((i) => i.id === e.target.value);
+                    if (item) setOpnameActualStock(Number(item.stock) || 0);
+                  }}
+                  className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2.5 text-body-md focus:border-primary-container outline-none"
+                >
+                  {dbItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} (Sistem: {item.stock} {item.unit})
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-label-md font-label-md text-on-surface mb-1">
-                    Hasil Hitung Fisik Riil
+                    Hasil Hitung Fisik Riil *
                   </label>
                   <input
                     className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2.5 text-body-md font-bold focus:border-primary-container outline-none"
                     placeholder="0.0"
-                    step="0.1"
+                    step="any"
                     type="number"
-                    defaultValue="2.0"
+                    required
+                    value={opnameActualStock}
+                    onChange={(e) => setOpnameActualStock(Number(e.target.value))}
                   />
                 </div>
                 <div>
                   <label className="block text-label-md font-label-md text-on-surface mb-1">
                     Alasan Penyesuaian
                   </label>
-                  <select className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-3 py-2.5 text-body-sm focus:border-primary-container outline-none">
-                    <option>Temuan Selisih Opname Harian</option>
-                    <option>Barang Rusak / Kadaluarsa</option>
-                    <option>Tumpah / Ceceran Barista</option>
-                    <option>Koreksi Salah Input PO</option>
+                  <select
+                    value={opnameReason}
+                    onChange={(e) => setOpnameReason(e.target.value)}
+                    className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-3 py-2.5 text-body-sm focus:border-primary-container outline-none"
+                  >
+                    <option value="Temuan Selisih Opname Harian">Temuan Selisih Opname Harian</option>
+                    <option value="Barang Rusak / Kadaluarsa">Barang Rusak / Kadaluarsa</option>
+                    <option value="Tumpah / Ceceran Barista">Tumpah / Ceceran Barista</option>
+                    <option value="Koreksi Salah Input PO">Koreksi Salah Input PO</option>
                   </select>
                 </div>
               </div>
@@ -1113,21 +1243,263 @@ export default function GudangDashboard() {
                   className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2 text-body-sm focus:border-primary-container outline-none"
                   placeholder="Contoh: Ditemukan 1 pack tambahan di rak display barista"
                   type="text"
+                  value={opnameNotes}
+                  onChange={(e) => setOpnameNotes(e.target.value)}
                 />
               </div>
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-outline-variant/30">
                 <button
-                  className="px-4 py-2 bg-white border border-[#94B9A9] text-tertiary rounded-xl text-label-md font-semibold"
+                  className="px-4 py-2 bg-white border border-[#94B9A9] text-tertiary rounded-xl text-label-md font-semibold cursor-pointer"
                   type="button"
                   onClick={closeOpnameModal}
                 >
                   Batal
                 </button>
                 <button
-                  className="px-5 py-2 bg-primary-container hover:bg-[#0D6038] text-white rounded-xl text-label-md font-bold shadow-sm"
+                  className="px-5 py-2 bg-primary-container hover:bg-[#0D6038] text-white rounded-xl text-label-md font-bold shadow-sm cursor-pointer disabled:opacity-50"
                   type="submit"
+                  disabled={stockOpnameMutation.isPending}
                 >
-                  Simpan Perubahan Saldo
+                  {stockOpnameMutation.isPending ? "Menyimpan..." : "Simpan Perubahan Saldo"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Tambah SKU Baru */}
+      {addItemOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#172033]/50 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-[24px] max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-[#94B9A9]">
+            <div className="flex items-start justify-between pb-3 border-b border-outline-variant/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-secondary-container text-primary flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[24px]">add_box</span>
+                </div>
+                <div>
+                  <h3 className="text-headline-sm font-bold text-on-surface">Tambah SKU / Bahan Baku Baru</h3>
+                  <p className="text-body-sm text-tertiary">Daftarkan item baru ke katalog inventaris gudang</p>
+                </div>
+              </div>
+              <button
+                className="p-1.5 text-tertiary hover:text-on-surface rounded-xl hover:bg-surface-container-low cursor-pointer"
+                onClick={() => setAddItemOpen(false)}
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleAddItemSubmit} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-on-surface mb-1">Nama Bahan Baku / SKU *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Biji Kopi Robusta Temanggung"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2.5 text-body-md focus:border-primary-container outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-on-surface mb-1">Satuan Unit *</label>
+                  <select
+                    value={newItemUnit}
+                    onChange={(e) => setNewItemUnit(e.target.value)}
+                    className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-3 py-2.5 text-body-sm focus:border-primary-container outline-none"
+                  >
+                    <option value="kg">kg</option>
+                    <option value="Liter">Liter</option>
+                    <option value="Botol">Botol</option>
+                    <option value="Pcs">Pcs</option>
+                    <option value="Pack">Pack</option>
+                    <option value="Karton">Karton</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-on-surface mb-1">Kategori</label>
+                  <select
+                    value={newItemCategory}
+                    onChange={(e) => setNewItemCategory(e.target.value)}
+                    className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-3 py-2.5 text-body-sm focus:border-primary-container outline-none"
+                  >
+                    <option value="Kopi & Minuman">Kopi &amp; Minuman</option>
+                    <option value="Dairy & Fresh">Dairy &amp; Fresh</option>
+                    <option value="Sirup & Flavour">Sirup &amp; Flavour</option>
+                    <option value="Bahan Bakery">Bahan Bakery</option>
+                    <option value="Packaging & Cup">Packaging &amp; Cup</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-on-surface mb-1">Stok Awal</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={newItemStock}
+                    onChange={(e) => setNewItemStock(Number(e.target.value))}
+                    className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2 text-body-md focus:border-primary-container outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-on-surface mb-1">Batas Minimum (Alert)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="any"
+                    value={newItemMinStock}
+                    onChange={(e) => setNewItemMinStock(Number(e.target.value))}
+                    className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2 text-body-md focus:border-primary-container outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-on-surface mb-1">Lokasi Rak / Penyimpanan</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Rak Kering A-03 atau Chiller Suhu 4°C"
+                  value={newItemRack}
+                  onChange={(e) => setNewItemRack(e.target.value)}
+                  className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2 text-body-sm focus:border-primary-container outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-outline-variant/30">
+                <button
+                  type="button"
+                  onClick={() => setAddItemOpen(false)}
+                  className="px-4 py-2 bg-white border border-[#94B9A9] text-tertiary rounded-xl text-label-md font-semibold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={createIngredientMutation.isPending}
+                  className="px-5 py-2 bg-primary-container hover:bg-[#0D6038] text-white rounded-xl text-label-md font-bold shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {createIngredientMutation.isPending ? "Mendaftarkan..." : "Daftarkan SKU"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Buat PO Cepat */}
+      {quickPoOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#172033]/50 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-[24px] max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-[#94B9A9]">
+            <div className="flex items-start justify-between pb-3 border-b border-outline-variant/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] text-primary flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[24px]">shopping_cart_checkout</span>
+                </div>
+                <div>
+                  <h3 className="text-headline-sm font-bold text-on-surface">Buat Purchase Order (PO) Cepat</h3>
+                  <p className="text-body-sm text-tertiary">Pemesanan restock darurat ke mitra pemasok resmi</p>
+                </div>
+              </div>
+              <button
+                className="p-1.5 text-tertiary hover:text-on-surface rounded-xl hover:bg-surface-container-low cursor-pointer"
+                onClick={() => setQuickPoOpen(false)}
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickPoSubmit} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-on-surface mb-1">Item yang Dipesan</label>
+                <input
+                  type="text"
+                  disabled
+                  value={`${quickPoItem.name} (${quickPoItem.unit})`}
+                  className="w-full bg-[#F5F8F6] border border-[#94B9A9]/60 rounded-xl px-4 py-2.5 text-body-md font-bold text-on-surface outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-on-surface mb-1">Pilih Mitra Pemasok *</label>
+                <select
+                  required
+                  value={quickPoSupplierId}
+                  onChange={(e) => setQuickPoSupplierId(e.target.value)}
+                  className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2.5 text-body-md focus:border-primary-container outline-none"
+                >
+                  {dbSuppliers.map((sup) => (
+                    <option key={sup.id} value={sup.id}>
+                      {sup.name} ({sup.category || "Distributor"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-on-surface mb-1">Jumlah Pesanan ({quickPoItem.unit}) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="any"
+                    required
+                    value={quickPoQty}
+                    onChange={(e) => setQuickPoQty(Number(e.target.value))}
+                    className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2 text-body-md focus:border-primary-container outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-on-surface mb-1">Harga Satuan B2B (Rp) *</label>
+                  <input
+                    type="number"
+                    min="1000"
+                    step="500"
+                    required
+                    value={quickPoPrice}
+                    onChange={(e) => setQuickPoPrice(Number(e.target.value))}
+                    className="w-full bg-white border border-[#94B9A9]/60 rounded-xl px-4 py-2 text-body-md focus:border-primary-container outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#F5F8F6] border border-outline-variant/30 flex justify-between items-center text-xs">
+                <span className="font-bold text-tertiary">Estimasi Total PO:</span>
+                <span className="font-mono font-bold text-primary text-body-md">
+                  Rp {(Number(quickPoQty) * Number(quickPoPrice)).toLocaleString("id-ID")}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-outline-variant/30">
+                <button
+                  type="button"
+                  onClick={() => setQuickPoOpen(false)}
+                  className="px-4 py-2 bg-white border border-[#94B9A9] text-tertiary rounded-xl text-label-md font-semibold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={createPoMutation.isPending}
+                  className="px-5 py-2 bg-primary-container hover:bg-[#0D6038] text-white rounded-xl text-label-md font-bold shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {createPoMutation.isPending ? "Menerbitkan..." : "Terbitkan PO ke Pemasok"}
                 </button>
               </div>
             </form>

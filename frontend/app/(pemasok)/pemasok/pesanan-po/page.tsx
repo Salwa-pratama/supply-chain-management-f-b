@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import PemasokTopbar from "@/components/pemasok/PemasokTopbar";
 import { usePurchaseOrders, useUpdatePoStatus } from "@/features/purchase-orders/hooks/use-purchase-orders";
+import { PurchaseOrderItemData } from "@/features/purchase-orders/types/purchase-orders.types";
 
 function rupiah(n: number | string) {
   return "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
@@ -25,11 +26,37 @@ export default function PemasokPesananPoPage() {
   const { data: dbPOs = [], isLoading } = usePurchaseOrders();
   const updatePoStatusMutation = useUpdatePoStatus();
   const [filterTab, setFilterTab] = useState<"all" | "sent" | "confirmed" | "shipped">("all");
+  const [selectedPoModal, setSelectedPoModal] = useState<PurchaseOrderItemData | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const handleExportCsv = () => {
+    if (dbPOs.length === 0) {
+      showToast("Belum ada data PO untuk diekspor!");
+      return;
+    }
+    const headers = ["No PO", "Tanggal", "Toko Pemesan", "Status", "Total Amount"];
+    const rows = dbPOs.map((po) => [
+      `"PO-${po.id.slice(0, 8).toUpperCase()}"`,
+      `"${new Date(po.createdAt).toLocaleDateString("id-ID")}"`,
+      `"${po.business?.name || "BAPER F&B"}"`,
+      `"${po.status.toUpperCase()}"`,
+      `"${po.totalAmount}"`,
+    ]);
+    const csvContent =
+      "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Rekap_PO_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("File Rekap PO (.csv) berhasil diunduh!");
   };
 
   const handleUpdateStatus = (id: string, newStatus: string, label: string) => {
@@ -82,7 +109,8 @@ export default function PemasokPesananPoPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              className="h-11 px-4 rounded-xl border border-[#94B9A9] bg-white text-[#172033] hover:bg-[#E8F3EC] font-label-lg text-label-lg flex items-center gap-2 transition-all"
+              onClick={handleExportCsv}
+              className="h-11 px-4 rounded-xl border border-[#94B9A9] bg-white text-[#172033] hover:bg-[#E8F3EC] font-label-lg text-label-lg flex items-center gap-2 transition-all cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
               <span>Ekspor Rekap PO</span>
@@ -277,8 +305,8 @@ export default function PemasokPesananPoPage() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => showToast(`Dokumen PO #${order.id.slice(0, 8)} telah diunduh.`)}
-                        className="h-10 px-3.5 rounded-xl border border-outline-variant/40 hover:bg-[#F5F8F6] text-on-surface text-label-md font-label-md flex items-center gap-1.5 transition-colors"
+                        onClick={() => setSelectedPoModal(order)}
+                        className="h-10 px-3.5 rounded-xl border border-outline-variant/40 hover:bg-[#F5F8F6] text-on-surface text-label-md font-label-md flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-[18px]">receipt</span>
                         <span>Lihat Dokumen PO</span>
@@ -337,6 +365,130 @@ export default function PemasokPesananPoPage() {
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#172033] text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 text-body-sm font-semibold">
             <span className="material-symbols-outlined text-secondary-container text-[20px]">check_circle</span>
             <span>{toastMsg}</span>
+          </div>
+        )}
+
+        {/* MODAL: Detail & Dokumen PO */}
+        {selectedPoModal && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-outline-variant/30 p-6 sm:p-8 animate-fade-in space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-outline-variant/30">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-secondary-container text-primary flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[24px]">receipt_long</span>
+                  </div>
+                  <div>
+                    <h3 className="text-headline-sm font-bold text-[#172033]">Dokumen Purchase Order (PO)</h3>
+                    <p className="text-xs text-tertiary">#PO-{selectedPoModal.id.slice(0, 8).toUpperCase()}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPoModal(null)}
+                  className="w-8 h-8 rounded-full hover:bg-surface-container-high flex items-center justify-center text-tertiary hover:text-on-surface cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#F8FAF9] border border-outline-variant/30 space-y-4 text-xs font-mono">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-bold">BAPER SCM - PURCHASE ORDER RESMI</span>
+                  <span className="text-primary font-bold">STATUS: {selectedPoModal.status.toUpperCase()}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-tertiary">
+                  <div>
+                    Pemesan (Buyer):{" "}
+                    <span className="text-on-surface font-sans font-bold block">
+                      {selectedPoModal.business?.name || "BAPER F&B Group"}
+                    </span>
+                    <span className="text-[11px] font-sans">{selectedPoModal.business?.address || "Jakarta"}</span>
+                  </div>
+                  <div>
+                    Pemasok (Vendor):{" "}
+                    <span className="text-on-surface font-sans font-bold block">
+                      {selectedPoModal.supplier?.name || "PT Tani Makmur Sejahtera"}
+                    </span>
+                    <span className="text-[11px] font-sans">{selectedPoModal.supplier?.phone || "+62 811-2345-6789"}</span>
+                  </div>
+                  <div>
+                    Tanggal PO:{" "}
+                    <span className="text-on-surface font-sans">
+                      {new Date(selectedPoModal.createdAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div>
+                    Surat Jalan (DO):{" "}
+                    <span className="text-primary font-sans font-bold">
+                      {selectedPoModal.deliveryNote || "Belum Terbit"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t">
+                  <div className="font-bold mb-2">RINCIAN PESANAN:</div>
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b text-tertiary">
+                        <th className="py-1">Bahan Baku</th>
+                        <th className="py-1 text-right">Qty</th>
+                        <th className="py-1 text-right">Harga Satuan</th>
+                        <th className="py-1 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedPoModal.purchaseOrderItems?.map((it, idx) => {
+                        const name = it.ingredient?.name || it.supplierItem?.name || "Bahan Pasokan";
+                        const unit = it.ingredient?.unit || it.supplierItem?.unit || "unit";
+                        const lineSubtotal = Number(it.quantity) * Number(it.price);
+                        return (
+                          <tr key={idx} className="border-b border-outline-variant/20">
+                            <td className="py-2 font-sans font-semibold text-on-surface">{name}</td>
+                            <td className="py-2 text-right font-mono">
+                              {it.quantity} {unit}
+                            </td>
+                            <td className="py-2 text-right font-mono">{rupiah(it.price)}</td>
+                            <td className="py-2 text-right font-mono font-bold text-primary">
+                              {rupiah(lineSubtotal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="pt-3 border-t flex justify-between items-center text-sm">
+                  <span className="font-bold font-sans text-on-surface">TOTAL NILAI PEMBELIAN:</span>
+                  <span className="font-bold font-mono text-primary text-body-lg">
+                    {rupiah(selectedPoModal.totalAmount)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPoModal(null)}
+                  className="h-10 px-4 rounded-xl border border-outline-variant/50 text-tertiary hover:bg-[#F5F8F6] text-xs font-bold cursor-pointer"
+                >
+                  Tutup
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="h-10 px-5 rounded-xl bg-primary text-white hover:bg-[#0D6038] text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">print</span>
+                  <span>Cetak Dokumen PO</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>

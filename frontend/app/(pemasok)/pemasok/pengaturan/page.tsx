@@ -1,14 +1,68 @@
-import type { Metadata } from "next";
-import PemasokTopbar from "@/components/pemasok/PemasokTopbar";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Pengaturan Akun Pemasok | BAPER SCM",
-};
+import { useEffect, useState } from "react";
+import PemasokTopbar from "@/components/pemasok/PemasokTopbar";
+import { useMySupplierProfile, useUpdateSupplierProfile } from "@/features/suppliers/hooks/use-suppliers";
 
 export default function PemasokPengaturanPage() {
+  const { data: profile, isLoading } = useMySupplierProfile();
+  const updateProfileMutation = useUpdateSupplierProfile();
+
+  const [activeTab, setActiveTab] = useState(0);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [category, setCategory] = useState("");
+  const [bankName, setBankName] = useState("mandiri");
+  const [bankAccount, setBankAccount] = useState("127-00-1099281-4");
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile) {
+      setName(profile.name || "");
+      setPhone(profile.phone || "");
+      setAddress(profile.address || "");
+      setCategory(profile.category || "Distributor Bahan Baku F&B");
+    }
+  }, [profile]);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateProfileMutation.mutate(
+      {
+        name: name.trim() || undefined,
+        phone: phone.trim() || undefined,
+        address: address.trim() || undefined,
+        category: category.trim() || undefined,
+      },
+      {
+        onSuccess: (updated) => {
+          showToast(`Pengaturan profil pemasok ${updated.name} berhasil disimpan!`);
+        },
+        onError: (err) => {
+          showToast(`Gagal menyimpan: ${err.message}`);
+        },
+      }
+    );
+  };
+
   return (
     <>
       <PemasokTopbar />
+
+      {/* Toast Alert */}
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#172033] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-outline-variant/40 animate-fade-in text-sm font-medium">
+          <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
       <main className="flex-1 p-8 max-w-[1440px] w-full mx-auto space-y-8">
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
@@ -19,7 +73,7 @@ export default function PemasokPengaturanPage() {
               </span>
               <span className="text-tertiary text-xs">•</span>
               <span className="text-body-sm text-tertiary font-body-sm">
-                ID Mitra: SUP-JKT-8821
+                ID Mitra: {profile ? `SUP-${profile.id.slice(0, 8).toUpperCase()}` : "SUP-LOADING"}
               </span>
             </div>
             <h1 className="text-headline-lg font-headline-lg text-[#172033]">
@@ -33,16 +87,27 @@ export default function PemasokPengaturanPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              className="h-11 px-4 rounded-xl border border-outline-variant/50 bg-white text-tertiary hover:bg-[#F5F8F6] font-label-lg text-label-lg transition-all"
+              onClick={() => {
+                if (profile) {
+                  setName(profile.name || "");
+                  setPhone(profile.phone || "");
+                  setAddress(profile.address || "");
+                  setCategory(profile.category || "");
+                }
+                showToast("Formulir telah di-reset ke nilai tersimpan.");
+              }}
+              className="h-11 px-4 rounded-xl border border-outline-variant/50 bg-white text-tertiary hover:bg-[#F5F8F6] font-label-lg text-label-lg transition-all cursor-pointer"
             >
               Batal
             </button>
             <button
               type="button"
-              className="h-11 px-6 rounded-xl bg-primary text-white hover:bg-[#0D6038] font-label-lg text-label-lg flex items-center gap-2 shadow-sm transition-all active:scale-[0.98] font-bold"
+              onClick={handleSave}
+              disabled={updateProfileMutation.isPending}
+              className="h-11 px-6 rounded-xl bg-primary text-white hover:bg-[#0D6038] font-label-lg text-label-lg flex items-center gap-2 shadow-sm transition-all active:scale-[0.98] font-bold cursor-pointer disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">save</span>
-              <span>Simpan Perubahan</span>
+              <span>{updateProfileMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}</span>
             </button>
           </div>
         </div>
@@ -53,17 +118,18 @@ export default function PemasokPengaturanPage() {
           <div className="lg:col-span-4 space-y-4">
             <div className="bg-white p-4 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] space-y-1">
               {[
-                { label: "Informasi PIC & Akun", icon: "badge", active: true },
-                { label: "Rekening Bank & Pencairan", icon: "account_balance", active: false },
-                { label: "Kebijakan Pasokan & Logistik", icon: "local_shipping", active: false },
-                { label: "Preferensi Notifikasi & Alert", icon: "notifications", active: false },
-                { label: "Keamanan & Autentikasi (2FA)", icon: "security", active: false },
+                { label: "Informasi PIC & Akun", icon: "badge" },
+                { label: "Rekening Bank & Pencairan", icon: "account_balance" },
+                { label: "Kebijakan Pasokan & Logistik", icon: "local_shipping" },
+                { label: "Preferensi Notifikasi & Alert", icon: "notifications" },
+                { label: "Keamanan & Autentikasi (2FA)", icon: "security" },
               ].map((item, idx) => (
                 <button
                   key={idx}
                   type="button"
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-label-md text-label-md transition-all text-left ${
-                    item.active
+                  onClick={() => setActiveTab(idx)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-label-md text-label-md transition-all text-left cursor-pointer ${
+                    activeTab === idx
                       ? "bg-secondary-container text-primary font-bold shadow-sm"
                       : "text-tertiary hover:text-on-surface hover:bg-[#F5F8F6]"
                   }`}
@@ -107,39 +173,43 @@ export default function PemasokPengaturanPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-tertiary uppercase">Nama Lengkap PIC</label>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-xs font-bold text-tertiary uppercase">Nama Perusahaan Pemasok *</label>
                   <input
                     type="text"
-                    defaultValue="Hendro Prasetyo"
-                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-[#F5F8F6] border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-white border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-[#172033]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-tertiary uppercase">Jabatan / Role</label>
+                  <label className="text-xs font-bold text-tertiary uppercase">Kategori Pasokan</label>
                   <input
                     type="text"
-                    defaultValue="Kepala Logistik & Distribusi"
-                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-[#F5F8F6] border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-white border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-[#172033]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-tertiary uppercase">Email Resmi</label>
-                  <input
-                    type="email"
-                    defaultValue="hendro.p@tanimakmur.co.id"
-                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-[#F5F8F6] border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-tertiary uppercase">No. Telepon Darurat</label>
+                  <label className="text-xs font-bold text-tertiary uppercase">No. Telepon / WhatsApp</label>
                   <input
                     type="tel"
-                    defaultValue="+62 812-9988-7711"
-                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-[#F5F8F6] border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 font-mono"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-white border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 font-mono text-[#172033]"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-xs font-bold text-tertiary uppercase">Alamat Pergudangan / Kantor</label>
+                  <textarea
+                    rows={2}
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full px-4 py-2 text-body-sm font-body-sm bg-white border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-[#172033]"
                   />
                 </div>
               </div>
@@ -160,7 +230,11 @@ export default function PemasokPengaturanPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-tertiary uppercase">Nama Bank Penampung</label>
-                  <select className="w-full h-11 px-4 text-body-sm font-body-sm bg-[#F5F8F6] border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                  <select
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-white border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-[#172033]"
+                  >
                     <option value="mandiri">Bank Mandiri (Persero) Tbk</option>
                     <option value="bca">Bank Central Asia (BCA)</option>
                     <option value="bri">Bank Rakyat Indonesia (BRI)</option>
@@ -172,119 +246,38 @@ export default function PemasokPengaturanPage() {
                   <label className="text-xs font-bold text-tertiary uppercase">Nomor Rekening Giro B2B</label>
                   <input
                     type="text"
-                    defaultValue="127-00-1099281-4"
-                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-[#F5F8F6] border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 font-mono font-bold"
+                    value={bankAccount}
+                    onChange={(e) => setBankAccount(e.target.value)}
+                    className="w-full h-11 px-4 text-body-sm font-body-sm bg-white border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 font-mono font-bold text-[#172033]"
                   />
                 </div>
 
                 <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-xs font-bold text-tertiary uppercase">Nama Pemilik Rekening (Harus Sesuai Badan Usaha)</label>
+                  <label className="text-xs font-bold text-tertiary uppercase">Nama Pemilik Rekening</label>
                   <input
                     type="text"
-                    defaultValue="PT TANI MAKMUR SEJAHTERA"
+                    value={name.toUpperCase()}
                     disabled
                     className="w-full h-11 px-4 text-body-sm font-body-sm bg-[#E9EDFF]/40 border border-outline-variant/40 rounded-xl text-on-surface font-semibold"
                   />
                   <span className="text-[11px] text-tertiary">
-                    Nama akun telah terkunci sesuai verifikasi dokumen NIB/NPWP OSS RBA.
+                    Nama akun telah terkunci sesuai verifikasi dokumen NIB/NPWP OSS RBA mitra pemasok.
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* SECTION 3: KEBIJAKAN PENGIRIMAN & CUT-OFF PO */}
-            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] space-y-6">
-              <div className="border-b border-outline-variant/30 pb-4">
-                <h2 className="text-headline-md font-headline-md text-[#172033] flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">schedule</span>
-                  Batas Waktu Pemesanan &amp; Logistik
-                </h2>
-                <p className="text-body-sm text-tertiary mt-1">
-                  Aturan cut-off sistem otomatis untuk pemrosesan PO oleh staf gudang.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-outline-variant/35 bg-[#F9F9FF]">
-                  <div>
-                    <h3 className="font-bold text-[#172033] text-body-md">
-                      Jam Cut-off PO untuk Pengiriman Besok Pagi
-                    </h3>
-                    <p className="text-body-sm text-tertiary">
-                      Pesanan yang masuk setelah jam ini akan otomatis dialokasikan ke jadwal pengiriman lusa.
-                    </p>
-                  </div>
-                  <input
-                    type="time"
-                    defaultValue="18:00"
-                    className="h-10 px-3 rounded-lg border border-outline-variant/50 bg-white font-mono font-bold text-primary text-body-md"
-                  />
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-outline-variant/35 bg-[#F9F9FF]">
-                  <div>
-                    <h3 className="font-bold text-[#172033] text-body-md">
-                      Minimal Order Pemesanan Bebas Ongkir (MOQ)
-                    </h3>
-                    <p className="text-body-sm text-tertiary">
-                      Gerai mitra yang memesan di atas nominal ini dibebaskan dari biaya armada logistik.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-tertiary">Rp</span>
-                    <input
-                      type="text"
-                      defaultValue="1.500.000"
-                      className="w-36 h-10 px-3 rounded-lg border border-outline-variant/50 bg-white font-mono font-bold text-[#172033] text-body-md text-right"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 4: TOGGLE PREFERENSI NOTIFIKASI */}
-            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] space-y-6">
-              <div className="border-b border-outline-variant/30 pb-4">
-                <h2 className="text-headline-md font-headline-md text-[#172033] flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">toggle_on</span>
-                  Preferensi Peringatan &amp; Notifikasi Otomatis
-                </h2>
-              </div>
-
-              <div className="divide-y divide-outline-variant/20">
-                {[
-                  {
-                    title: "Kirim Notifikasi SMS / Push untuk PO Mendesak",
-                    desc: "Sistem mengirimkan ringkasan pesan darurat ke PIC saat gerai memesan pasokan same-day.",
-                    enabled: true,
-                  },
-                  {
-                    title: "Alert Buffer Stok Menipis ke Manajer Gudang",
-                    desc: "Notifikasi otomatis ketika fisik barang di cold storage mencapai 20% kapasitas minimal.",
-                    enabled: true,
-                  },
-                  {
-                    title: "Laporan Ringkasan Penjualan Harian via Email",
-                    desc: "Kirim rekap PDF faktur transaksi dan pengiriman setiap pukul 21:00 WIB.",
-                    enabled: false,
-                  },
-                ].map((item, idx) => (
-                  <div key={idx} className="py-4 flex items-center justify-between gap-4">
-                    <div>
-                      <div className="font-bold text-[#172033] text-body-md">{item.title}</div>
-                      <p className="text-xs text-tertiary mt-0.5">{item.desc}</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                      <input
-                        type="checkbox"
-                        defaultChecked={item.enabled}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-outline-variant/40 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:width-5 after:transition-all peer-checked:bg-primary" />
-                    </label>
-                  </div>
-                ))}
-              </div>
+            {/* Save Action Bottom Bar */}
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={updateProfileMutation.isPending}
+                className="h-11 px-6 rounded-xl bg-primary text-white hover:bg-[#0D6038] font-label-lg text-label-lg flex items-center gap-2 shadow-sm transition-all active:scale-[0.98] font-bold cursor-pointer disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">save</span>
+                <span>{updateProfileMutation.isPending ? "Menyimpan..." : "Simpan Perubahan Pengaturan"}</span>
+              </button>
             </div>
           </div>
         </div>

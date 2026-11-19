@@ -20,6 +20,16 @@ export class BusinessController {
     return ServiceResponse.success("Data bisnis berhasil dimuat", data);
   }
 
+  @Patch("my")
+  @ApiOperation({ summary: "Perbarui profil bisnis aktif milik owner" })
+  async updateMyBusiness(
+    @CurrentUser("id") userId: string,
+    @Body() dto: { name?: string; address?: string; phoneBusiness?: string; description?: string; category?: string }
+  ) {
+    const data = await this.businessService.updateMyBusiness(userId, dto);
+    return ServiceResponse.success("Data bisnis berhasil diperbarui", data);
+  }
+
   @Get("all")
   @ApiOperation({ summary: "Ambil seluruh bisnis (Super Admin)" })
   async getAllBusinesses() {

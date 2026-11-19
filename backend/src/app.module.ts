@@ -11,6 +11,8 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { UsersModule } from './modules/users/users.module';
+import { ProductionModule } from './modules/production/production.module';
+import { DistributionModule } from './modules/distribution/distribution.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { UsersModule } from './modules/users/users.module';
     PurchaseOrdersModule,
     DashboardModule,
     UsersModule,
+    ProductionModule,
+    DistributionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -19,3 +19,30 @@ export async function stockOpnameApi(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+export async function createIngredientApi(payload: {
+  name: string;
+  unit: string;
+  stock?: number;
+  minStock?: number;
+  category?: string;
+  locationRack?: string;
+  preferredSupplierId?: string;
+}): Promise<InventoryItem> {
+  return apiClient<InventoryItem>("/inventory", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function dispatchKitchenApi(payload: {
+  ingredientId: string;
+  quantity: number;
+  station?: string;
+  notes?: string;
+}): Promise<{ ingredient: InventoryItem; message: string }> {
+  return apiClient<{ ingredient: InventoryItem; message: string }>("/inventory/dispatch-kitchen", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

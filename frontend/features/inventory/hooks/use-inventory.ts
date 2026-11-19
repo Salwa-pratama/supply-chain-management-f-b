@@ -1,7 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getInventoryApi, getMovementsApi, stockOpnameApi } from "../api/inventory-api";
+import {
+  createIngredientApi,
+  dispatchKitchenApi,
+  getInventoryApi,
+  getMovementsApi,
+  stockOpnameApi,
+} from "../api/inventory-api";
 import { InventoryItem, StockMovementItem } from "../types/inventory.types";
 import { ApiError } from "@/lib/api-client";
 
@@ -43,3 +49,29 @@ export function useStockOpname(options?: {
     },
   });
 }
+
+export function useCreateIngredient() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createIngredientApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useDispatchKitchen() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: dispatchKitchenApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory", "movements"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+

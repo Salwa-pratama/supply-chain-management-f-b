@@ -69,6 +69,24 @@ export class BusinessService {
     return business;
   }
 
+  async updateMyBusiness(
+    userId: string,
+    dto: { name?: string; address?: string; phoneBusiness?: string; description?: string; category?: string }
+  ) {
+    const businessId = await this.getBusinessForUser(userId);
+
+    return this.prisma.business.update({
+      where: { id: businessId },
+      data: {
+        name: dto.name,
+        address: dto.address,
+        phoneBusiness: dto.phoneBusiness,
+        description: dto.description,
+        category: dto.category,
+      },
+    });
+  }
+
   async getAllBusinesses() {
     return this.prisma.business.findMany({
       include: {

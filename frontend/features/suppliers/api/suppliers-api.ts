@@ -23,3 +23,15 @@ export async function createSupplierItem(payload: CreateSupplierItemPayload): Pr
     body: JSON.stringify(payload),
   });
 }
+
+export async function updateMySupplierProfile(payload: {
+  name?: string;
+  phone?: string;
+  address?: string;
+  category?: string;
+}): Promise<SupplierData> {
+  return apiClient<SupplierData>("/suppliers/my-profile", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}

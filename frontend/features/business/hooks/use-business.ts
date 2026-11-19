@@ -5,6 +5,7 @@ import {
   fetchBusinessMembers,
   fetchMyBusiness,
   toggleMemberStatus,
+  updateMyBusiness,
 } from "../api/business-api";
 import { AddMemberPayload, BusinessData, BusinessMember } from "../types/business.types";
 import { ApiError } from "@/lib/api-client";
@@ -48,6 +49,17 @@ export function useToggleMemberStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["business", "members"] });
       queryClient.invalidateQueries({ queryKey: ["business", "my"] });
+    },
+  });
+}
+
+export function useUpdateBusiness() {
+  const queryClient = useQueryClient();
+  return useMutation<BusinessData, ApiError, { name?: string; address?: string; phoneBusiness?: string; description?: string; category?: string }>({
+    mutationFn: (payload) => updateMyBusiness(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["business", "my"] });
+      queryClient.invalidateQueries({ queryKey: ["business", "all"] });
     },
   });
 }
