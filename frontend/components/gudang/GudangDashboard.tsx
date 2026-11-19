@@ -3,13 +3,31 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import GudangHeader from "@/components/gudang/GudangHeader";
 import InventoryTable from "@/components/gudang/InventoryTable";
-import { useVerifyQc } from "@/features/purchase-orders/hooks/use-purchase-orders";
-import { useStockOpname } from "@/features/inventory/hooks/use-inventory";
+import { usePurchaseOrders, useVerifyQc } from "@/features/purchase-orders/hooks/use-purchase-orders";
+import { useInventory, useStockMovements, useStockOpname } from "@/features/inventory/hooks/use-inventory";
 
 type QC = { poId: string; vendor: string; item: string; qty: string };
 type Toast = { pesan: string; ikon: string };
 
 export default function GudangDashboard() {
+  const { data: dbItems = [] } = useInventory();
+  const { data: dbMovements = [] } = useStockMovements();
+  const { data: dbPOs = [] } = usePurchaseOrders();
+
+  const totalSku = dbItems.length;
+  const criticalItems = dbItems.filter(
+    (i) => i.status === "kritis" || i.status === "menipis" || Number(i.stock) <= Number(i.minStock)
+  );
+  const warningCount = dbItems.filter((i) => i.status === "menipis").length;
+  const emptyCount = dbItems.filter((i) => i.status === "kritis" || Number(i.stock) <= 0).length;
+  const totalUnits = dbItems.reduce((acc, i) => acc + Number(i.stock), 0);
+  const totalNilaiStok = totalUnits * 25000;
+
+  const poPendingQc = dbPOs.filter(
+    (po) => po.status === "shipped" || (po.status === "received" && po.qcStatus !== "passed")
+  ).length;
+  const poInTransit = dbPOs.filter((po) => po.status === "shipped").length;
+
   const [qcOpen, setQcOpen] = useState(false);
   const [qc, setQc] = useState<QC>({
     poId: "PO-2025-089",
@@ -239,16 +257,13 @@ export default function GudangDashboard() {
               Status Real-time:
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container-low border border-outline-variant/30 text-[#172033]">
-              <span className="w-2 h-2 rounded-full bg-blue-500" /> 2 PO Dalam Perjalanan
+              <span className="w-2 h-2 rounded-full bg-blue-500" /> {poInTransit} PO Dalam Perjalanan
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#FFF9E6] border border-[#B7791F]/30 text-[#B7791F] font-semibold">
-              <span className="w-2 h-2 rounded-full bg-[#D99A25]" /> 3 Menunggu Pemeriksaan QC
-            </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#FFF9E6] border border-[#B7791F]/30 text-[#B7791F]">
-              <span className="w-2 h-2 rounded-full bg-[#D99A25]" /> 4 Permintaan Dapur Belum Dipenuhi
+              <span className="w-2 h-2 rounded-full bg-[#D99A25]" /> {poPendingQc} Menunggu Pemeriksaan QC
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#FDF2F2] border border-[#B54747]/30 text-[#B54747] font-semibold">
-              <span className="w-2 h-2 rounded-full bg-[#B54747]" /> 5 Bahan Mendekati Batas Minimum
+              <span className="w-2 h-2 rounded-full bg-[#B54747]" /> {warningCount + emptyCount} Bahan Perlu Restock
             </span>
           </div>
         </div>
@@ -259,9 +274,9 @@ export default function GudangDashboard() {
               <span className="text-label-md font-label-md text-[#7B8794]">Total Jenis SKU</span>
               <span className="material-symbols-outlined text-[20px] text-primary">inventory_2</span>
             </div>
-            <div className="text-headline-md font-headline-md font-bold text-on-surface">48 SKU</div>
+            <div className="text-headline-md font-headline-md font-bold text-on-surface">{totalSku} SKU</div>
             <div className="text-body-sm font-body-sm text-tertiary mt-1 flex items-center gap-1">
-              <span className="text-primary font-semibold">32 Bahan</span> & 16 Kemasan
+              <span className="text-primary font-semibold">Database Live</span>
             </div>
           </div>
           {/* Metric 2: Total Nilai & Stok */}
@@ -270,9 +285,11 @@ export default function GudangDashboard() {
               <span className="text-label-md font-label-md text-[#7B8794]">Nilai Stok Gudang</span>
               <span className="material-symbols-outlined text-[20px] text-primary">payments</span>
             </div>
-            <div className="text-headline-md font-headline-md font-bold text-on-surface">Rp 42.600.000</div>
+            <div className="text-headline-md font-headline-md font-bold text-on-surface">
+              Rp {totalNilaiStok.toLocaleString("id-ID")}
+            </div>
             <div className="text-body-sm font-body-sm text-tertiary mt-1 flex items-center gap-1">
-              <span className="text-on-surface font-semibold">14.850 Unit</span> total fisik
+              <span className="text-on-surface font-semibold">{totalUnits.toLocaleString("id-ID")} Unit</span> total fisik
             </div>
           </div>
           {/* Metric 3: Stok Menipis */}
@@ -281,46 +298,46 @@ export default function GudangDashboard() {
               <span className="text-label-md font-label-md text-[#7B8794]">Stok Menipis</span>
               <span className="material-symbols-outlined text-[20px] text-[#B7791F]">warning</span>
             </div>
-            <div className="text-headline-md font-headline-md font-bold text-[#172033]">4 Bahan</div>
+            <div className="text-headline-md font-headline-md font-bold text-[#172033]">{warningCount} Bahan</div>
             <div className="mt-1">
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-[#FFF9E6] text-[#B7791F] border border-[#B7791F]/30 font-semibold">
-                Batas Kritis Shift
+                Mendekati Batas
               </span>
             </div>
           </div>
           {/* Metric 4: Stok Habis */}
           <div className="bg-white rounded-[20px] p-4 border border-[#94B9A9]/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between text-tertiary mb-2">
-              <span className="text-label-md font-label-md text-[#7B8794]">Barang Habis (0)</span>
+              <span className="text-label-md font-label-md text-[#7B8794]">Barang Kritis (0)</span>
               <span className="material-symbols-outlined text-[20px] text-error">report_problem</span>
             </div>
-            <div className="text-headline-md font-headline-md font-bold text-error">1 Bahan</div>
+            <div className="text-headline-md font-headline-md font-bold text-error">{emptyCount} Bahan</div>
             <div className="mt-1">
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-[#FDF2F2] text-error border border-error/30 font-semibold">
-                Perlu PO Cepat
+                {emptyCount > 0 ? "Perlu PO Cepat" : "Semua Tersedia"}
               </span>
             </div>
           </div>
           {/* Metric 5: Penerimaan Hari Ini */}
           <div className="bg-white rounded-[20px] p-4 border border-[#94B9A9]/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between text-tertiary mb-2">
-              <span className="text-label-md font-label-md text-[#7B8794]">Penerimaan Hari Ini</span>
+              <span className="text-label-md font-label-md text-[#7B8794]">Total PO Gudang</span>
               <span className="material-symbols-outlined text-[20px] text-primary">local_shipping</span>
             </div>
-            <div className="text-headline-md font-headline-md font-bold text-on-surface">3 Pengiriman</div>
+            <div className="text-headline-md font-headline-md font-bold text-on-surface">{dbPOs.length} Pengiriman</div>
             <div className="text-body-sm font-body-sm text-tertiary mt-1 flex items-center gap-1">
-              <span className="text-primary font-semibold">2 Lengkap</span>, 1 Menunggu QC
+              <span className="text-primary font-semibold">{dbPOs.filter(p => p.qcStatus === 'passed').length} Lolos QC</span>
             </div>
           </div>
           {/* Metric 6: Permintaan Menunggu */}
           <div className="bg-white rounded-[20px] p-4 border border-[#94B9A9]/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between text-tertiary mb-2">
-              <span className="text-label-md font-label-md text-[#7B8794]">Permintaan Dapur</span>
+              <span className="text-label-md font-label-md text-[#7B8794]">Audit Mutasi</span>
               <span className="material-symbols-outlined text-[20px] text-[#436558]">soup_kitchen</span>
             </div>
-            <div className="text-headline-md font-headline-md font-bold text-on-surface">5 Batch</div>
+            <div className="text-headline-md font-headline-md font-bold text-on-surface">{dbMovements.length} Catatan</div>
             <div className="text-body-sm font-body-sm text-tertiary mt-1 flex items-center gap-1">
-              Kitchen & Barista
+              Log Kartu Stok
             </div>
           </div>
         </div>
@@ -383,108 +400,89 @@ export default function GudangDashboard() {
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-[#FFF9E6] text-[#B7791F] font-semibold border border-[#B7791F]/30">
-                  1 Menunggu QC
+                  {poPendingQc} Menunggu QC
                 </span>
               </div>
               {/* List PO Inbound */}
               <div className="mt-4 space-y-3.5">
-                {/* PO 1 (Pending QC) */}
-                <div className="p-4 rounded-2xl border-2 border-primary/40 bg-gradient-to-r from-surface-container-low/40 to-white hover:border-primary transition-all">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-primary text-label-md">PO-2025-089</span>
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#FFF9E6] text-[#B7791F]">
-                          Menunggu Pemeriksaan QC
-                        </span>
+                {dbPOs.length === 0 ? (
+                  <div className="p-8 text-center text-tertiary">Belum ada PO tercatat.</div>
+                ) : (
+                  dbPOs.slice(0, 4).map((po) => {
+                    const isPassed = po.qcStatus === "passed";
+                    const isShipped = po.status === "shipped";
+                    const canQC = isShipped || (po.status === "received" && !isPassed);
+                    const firstItem = po.purchaseOrderItems[0];
+                    const itemName = firstItem
+                      ? `${firstItem.ingredient?.name || firstItem.supplierItem?.name || "Bahan Baku"} (${firstItem.quantity} ${firstItem.ingredient?.unit || ""})`
+                      : "Komoditas PO";
+                    const poCode = `#PO-${po.id.slice(0, 8).toUpperCase()}`;
+
+                    return (
+                      <div
+                        key={po.id}
+                        className={`p-4 rounded-2xl border transition-all ${
+                          canQC
+                            ? "border-2 border-primary/40 bg-gradient-to-r from-surface-container-low/40 to-white hover:border-primary"
+                            : "border-outline-variant/30 bg-white hover:bg-[#F9FBFA]"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-primary text-label-md">{poCode}</span>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                  isPassed
+                                    ? "bg-[#E8F3EC] text-[#137A48]"
+                                    : canQC
+                                    ? "bg-[#FFF9E6] text-[#B7791F]"
+                                    : "bg-surface-container-low text-tertiary"
+                                }`}
+                              >
+                                {isPassed
+                                  ? "Diterima Lengkap (Lolos QC)"
+                                  : canQC
+                                  ? "Menunggu Pemeriksaan QC"
+                                  : po.status.toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="font-bold text-on-surface text-body-md mt-1">
+                              {po.supplier?.name || "Mitra Pemasok"}
+                            </div>
+                            <div className="text-body-sm text-tertiary">{itemName}</div>
+                            <div className="text-[11px] text-tertiary mt-1 flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-[13px] text-primary">schedule</span>{" "}
+                              {po.deliveryNote || "Jadwal Pengiriman Reguler"} • Driver: {po.driverInfo || "Armada Pemasok"}
+                            </div>
+                          </div>
+                          {canQC ? (
+                            <button
+                              className="px-3.5 py-2 bg-primary-container hover:bg-[#0D6038] text-white rounded-xl text-label-sm font-label-sm font-bold shadow-sm flex items-center gap-1.5 shrink-0 active:scale-[0.98]"
+                              onClick={() =>
+                                openQCModal(
+                                  po.id,
+                                  po.supplier?.name || "Mitra Pemasok",
+                                  firstItem?.ingredient?.name || firstItem?.supplierItem?.name || "Bahan Baku",
+                                  `${firstItem?.quantity || 1} ${firstItem?.ingredient?.unit || "Unit"}`
+                                )
+                              }
+                            >
+                              <span className="material-symbols-outlined text-[16px]">fact_check</span> Periksa &amp; Terima
+                            </button>
+                          ) : (
+                            <button
+                              className="px-3 py-1.5 bg-white border border-[#94B9A9] hover:bg-[#E8F3EC] text-[#137A48] rounded-xl text-label-sm font-label-sm font-semibold shrink-0"
+                              onClick={() => showToast("Menampilkan Surat Jalan & Berita Acara Penerimaan (BAP)")}
+                            >
+                              Lihat Bukti
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="font-bold text-on-surface text-body-md mt-1">
-                        PT Tani Makmur Sejahtera
-                      </div>
-                      <div className="text-body-sm text-tertiary">
-                        Biji Kopi Arabika Lintong - 25 kg (25 Pack @1kg)
-                      </div>
-                      <div className="text-[11px] text-tertiary mt-1 flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[13px] text-primary">schedule</span>{" "}
-                        Tiba: Hari ini, 08:45 WIB • Driver: Hendra (Mobil Box B 8821 QC)
-                      </div>
-                    </div>
-                    <button
-                      className="px-3.5 py-2 bg-primary-container hover:bg-[#0D6038] text-white rounded-xl text-label-sm font-label-sm font-bold shadow-sm flex items-center gap-1.5 shrink-0 active:scale-[0.98]"
-                      onClick={() =>
-                        openQCModal(
-                          "PO-2025-089",
-                          "PT Tani Makmur Sejahtera",
-                          "Biji Kopi Arabika Lintong",
-                          "25 kg",
-                        )
-                      }
-                    >
-                      <span className="material-symbols-outlined text-[16px]">fact_check</span> Periksa &
-                      Terima
-                    </button>
-                  </div>
-                </div>
-                {/* PO 2 (Selesai Diterima) */}
-                <div className="p-4 rounded-2xl border border-outline-variant/30 bg-white hover:bg-[#F9FBFA] transition-colors">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-tertiary text-label-md">PO-2025-090</span>
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#E8F3EC] text-[#137A48]">
-                          Diterima Lengkap
-                        </span>
-                      </div>
-                      <div className="font-bold text-on-surface text-body-md mt-1">
-                        CV Dairy Makmur Sentosa
-                      </div>
-                      <div className="text-body-sm text-tertiary">
-                        Susu Segar Pasteurisasi - 50 Karton (50 Liter)
-                      </div>
-                      <div className="text-[11px] text-tertiary mt-1 flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[13px] text-primary">
-                          check_circle
-                        </span>{" "}
-                        Diperiksa Bambang Prakoso • Suhu Masuk: 3.8°C (Lolos QC)
-                      </div>
-                    </div>
-                    <button
-                      className="px-3 py-1.5 bg-white border border-[#94B9A9] hover:bg-[#E8F3EC] text-[#137A48] rounded-xl text-label-sm font-label-sm font-semibold shrink-0"
-                      onClick={() => showToast("Menampilkan Surat Jalan & Berita Acara Penerimaan")}
-                    >
-                      Lihat Bukti
-                    </button>
-                  </div>
-                </div>
-                {/* PO 3 (Dalam Pengiriman) */}
-                <div className="p-4 rounded-2xl border border-outline-variant/30 bg-white hover:bg-[#F9FBFA] transition-colors">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-tertiary text-label-md">PO-2025-091</span>
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700">
-                          Dalam Pengiriman
-                        </span>
-                      </div>
-                      <div className="font-bold text-on-surface text-body-md mt-1">
-                        Sentra Kemasan Food-grade
-                      </div>
-                      <div className="text-body-sm text-tertiary">Paper Cup Hot 12oz & Lid - 1.000 Unit</div>
-                      <div className="text-[11px] text-tertiary mt-1 flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[13px] text-blue-600">
-                          local_shipping
-                        </span>{" "}
-                        Estimasi Tiba: Hari ini, 14:00 WIB (Kurir Mitra Express)
-                      </div>
-                    </div>
-                    <button
-                      className="px-3 py-1.5 bg-white border border-[#94B9A9] hover:bg-surface-container-low text-tertiary rounded-xl text-label-sm font-label-sm font-semibold shrink-0"
-                      onClick={() => showToast("Melacak pengiriman kurir: Paket sudah di area Senopati")}
-                    >
-                      Lacak Kurir
-                    </button>
-                  </div>
-                </div>
+                    );
+                  })
+                )}
               </div>
             </div>
             <div className="mt-4 pt-3 border-t border-outline-variant/20 flex justify-between items-center text-label-sm">
@@ -812,82 +810,71 @@ export default function GudangDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/20 text-body-md font-body-md">
-                {/* Mutasi 1: Masuk PO */}
-                <tr className="hover:bg-[#F9FBFA] transition-colors h-14">
-                  <td className="px-5 py-3 font-mono font-semibold text-primary text-body-sm">MUT-8921</td>
-                  <td className="px-5 py-3 text-body-sm text-tertiary">Hari Ini, 09:40 WIB</td>
-                  <td className="px-5 py-3 font-bold text-on-surface">Susu Segar Pasteurisasi</td>
-                  <td className="px-5 py-3">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-[#E8F3EC] text-[#137A48] font-semibold">
-                      <span className="material-symbols-outlined text-[14px]">arrow_downward</span> Masuk
-                      (Penerimaan PO)
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right font-bold text-[#137A48]">+50 Liter</td>
-                  <td className="px-5 py-3 text-right font-semibold text-on-surface">78 Liter</td>
-                  <td className="px-5 py-3 text-body-sm text-on-surface">Bambang Prakoso (Gudang)</td>
-                  <td className="px-5 py-3">
-                    <a className="font-mono text-body-sm text-primary hover:underline" href="#">
-                      PO-2025-090
-                    </a>
-                  </td>
-                </tr>
-                {/* Mutasi 2: Keluar Produksi Barista */}
-                <tr className="hover:bg-[#F9FBFA] transition-colors h-14">
-                  <td className="px-5 py-3 font-mono font-semibold text-primary text-body-sm">MUT-8920</td>
-                  <td className="px-5 py-3 text-body-sm text-tertiary">Hari Ini, 09:15 WIB</td>
-                  <td className="px-5 py-3 font-bold text-on-surface">Biji Kopi Arabika Lintong</td>
-                  <td className="px-5 py-3">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-[#FFF9E6] text-[#B7791F] font-semibold">
-                      <span className="material-symbols-outlined text-[14px]">arrow_upward</span> Keluar
-                      (Produksi Barista)
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right font-bold text-error">-1.5 kg</td>
-                  <td className="px-5 py-3 text-right font-semibold text-on-surface">1.8 kg</td>
-                  <td className="px-5 py-3 text-body-sm text-on-surface">Bambang Prakoso (Gudang)</td>
-                  <td className="px-5 py-3">
-                    <a className="font-mono text-body-sm text-primary hover:underline" href="#">
-                      REQ-081 (Barista Pagi)
-                    </a>
-                  </td>
-                </tr>
-                {/* Mutasi 3: Keluar POS Kasir (Kemasan Cup) */}
-                <tr className="hover:bg-[#F9FBFA] transition-colors h-14">
-                  <td className="px-5 py-3 font-mono font-semibold text-primary text-body-sm">MUT-8919</td>
-                  <td className="px-5 py-3 text-body-sm text-tertiary">Hari Ini, 08:30 WIB</td>
-                  <td className="px-5 py-3 font-bold text-on-surface">Paper Cup Hot 12oz</td>
-                  <td className="px-5 py-3">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-low text-tertiary font-semibold">
-                      <span className="material-symbols-outlined text-[14px]">point_of_sale</span> Keluar POS
-                      Kasir
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right font-bold text-error">-200 pcs</td>
-                  <td className="px-5 py-3 text-right font-semibold text-on-surface">1.200 pcs</td>
-                  <td className="px-5 py-3 text-body-sm text-on-surface">Sistem Kasir Otomatis</td>
-                  <td className="px-5 py-3">
-                    <span className="font-mono text-body-sm text-tertiary">Struk #TRX-840 Batch</span>
-                  </td>
-                </tr>
-                {/* Mutasi 4: Koreksi Opname */}
-                <tr className="hover:bg-[#F9FBFA] transition-colors h-14">
-                  <td className="px-5 py-3 font-mono font-semibold text-primary text-body-sm">MUT-8918</td>
-                  <td className="px-5 py-3 text-body-sm text-tertiary">Kemarin, 21:00 WIB</td>
-                  <td className="px-5 py-3 font-bold text-on-surface">Sirup Karamel Monin</td>
-                  <td className="px-5 py-3">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-blue-50 text-blue-700 font-semibold">
-                      <span className="material-symbols-outlined text-[14px]">tune</span> Koreksi Opname Shift
-                      Malam
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right font-bold text-error">-0.3 Botol</td>
-                  <td className="px-5 py-3 text-right font-semibold text-on-surface">1.2 Botol</td>
-                  <td className="px-5 py-3 text-body-sm text-on-surface">Agus (Supervisor Shift)</td>
-                  <td className="px-5 py-3">
-                    <span className="font-mono text-body-sm text-tertiary">OPN-2025-054 (Spill/Cecer)</span>
-                  </td>
-                </tr>
+                {dbMovements.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-8 text-center text-tertiary">
+                      Belum ada riwayat mutasi stok tercatat.
+                    </td>
+                  </tr>
+                ) : (
+                  dbMovements.slice(0, 5).map((m) => {
+                    const isIn = m.type === "in";
+                    const isOut = m.type === "out";
+                    const unit = m.ingredient?.unit || "Unit";
+                    const mutId = `MUT-${m.id.slice(0, 6).toUpperCase()}`;
+
+                    return (
+                      <tr key={m.id} className="hover:bg-[#F9FBFA] transition-colors h-14">
+                        <td className="px-5 py-3 font-mono font-semibold text-primary text-body-sm">
+                          {mutId}
+                        </td>
+                        <td className="px-5 py-3 text-body-sm text-tertiary">
+                          {new Date(m.createdAt).toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                        <td className="px-5 py-3 font-bold text-on-surface">
+                          {m.ingredient?.name || "Bahan Baku"}
+                        </td>
+                        <td className="px-5 py-3">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm font-semibold ${
+                              isIn
+                                ? "bg-[#E8F3EC] text-[#137A48]"
+                                : isOut
+                                ? "bg-[#FFF9E6] text-[#B7791F]"
+                                : "bg-blue-50 text-blue-700"
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[14px]">
+                              {isIn ? "arrow_downward" : isOut ? "arrow_upward" : "tune"}
+                            </span>{" "}
+                            {isIn ? "Masuk (Penerimaan PO)" : isOut ? "Keluar (Produksi)" : "Koreksi Opname"}
+                          </span>
+                        </td>
+                        <td
+                          className={`px-5 py-3 text-right font-bold ${
+                            isIn ? "text-[#137A48]" : isOut ? "text-error" : "text-blue-700"
+                          }`}
+                        >
+                          {isIn ? `+${Number(m.qty).toLocaleString("id-ID")}` : `-${Number(m.qty).toLocaleString("id-ID")}`} {unit}
+                        </td>
+                        <td className="px-5 py-3 text-right font-semibold text-on-surface">-</td>
+                        <td className="px-5 py-3 text-body-sm text-on-surface">
+                          {m.createdBy?.name || "Petugas Gudang"}
+                        </td>
+                        <td className="px-5 py-3">
+                          <span className="font-mono text-body-sm text-primary">
+                            {m.referenceId ? `#${m.referenceId.slice(0, 8).toUpperCase()}` : "-"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

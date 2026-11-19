@@ -117,18 +117,14 @@ export default function PosTerminal() {
     return PRODUCTS;
   }, [dbProducts]);
 
-  const [cart, setCart] = useState<CartLine[]>([
-    { id: 4, qty: 2 },
-    { id: 1, qty: 1 },
-    { id: 7, qty: 1 },
-  ]);
+  const [cart, setCart] = useState<CartLine[]>([]);
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
   const [category, setCategory] = useState<"all" | Category>("all");
   const [orderType, setOrderType] = useState<OrderType>("dine-in");
-  const [customer, setCustomer] = useState("Ibu Kartika");
-  const [wa, setWa] = useState("0812-9876-5432");
-  const [seq, setSeq] = useState(842);
+  const [customer, setCustomer] = useState("");
+  const [wa, setWa] = useState("");
+  const [seq, setSeq] = useState(1);
 
   const [payOpen, setPayOpen] = useState(false);
   const [method, setMethod] = useState<Method>("cash");
@@ -542,13 +538,13 @@ export default function PosTerminal() {
                   </div>
                   <div>
                     <label
-                      htmlFor="customer-wa"
+                      htmlFor="customer-phone"
                       className="block font-label-sm text-[11px] text-tertiary mb-1"
                     >
-                      No WhatsApp
+                      No Telepon
                     </label>
                     <input
-                      id="customer-wa"
+                      id="customer-phone"
                       type="text"
                       value={wa}
                       onChange={(e) => setWa(e.target.value)}

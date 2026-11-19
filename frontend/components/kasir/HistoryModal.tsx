@@ -171,7 +171,7 @@ export default function HistoryModal({ onClose }: { onClose: () => void }) {
                           {order.createdBy?.name || "Kasir Utama"}
                         </span>
                         <span className="text-tertiary text-[11px] block">
-                          {order.source === "whatsapp" ? "WhatsApp Bot" : order.orderType || "Dine-in"}
+                          {order.source === "web" ? "Web Order" : order.orderType || "Dine-in"}
                         </span>
                       </td>
                       <td className="px-3.5 py-2 text-tertiary text-[12px] max-w-[200px] truncate" title={itemsSummary}>

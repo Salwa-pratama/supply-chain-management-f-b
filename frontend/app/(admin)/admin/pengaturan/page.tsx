@@ -22,7 +22,7 @@ export default function AdminPengaturanPage() {
             Pengaturan Sistem &amp; Ekosistem SCM
           </h1>
           <p className="text-body-md font-body-md text-tertiary mt-1">
-            Kelola konfigurasi integrasi AI Gemini, WhatsApp Gateway, webhook payment gateway, dan kebijakan keamanan platform.
+            Kelola konfigurasi integrasi AI Gemini, Webhook API Gateway, webhook payment gateway, dan kebijakan keamanan platform.
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export default function AdminPengaturanPage() {
           <div className="bg-white p-4 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] space-y-1">
             {[
               { label: "Integrasi AI & LLM Engine", icon: "neurology", active: true },
-              { label: "WhatsApp Gateway Server", icon: "chat", active: false },
+              { label: "API Webhook & Cloud Sync", icon: "cloud_sync", active: false },
               { label: "Payment Gateway & Escrow", icon: "payments", active: false },
               { label: "Backup Database & Snapshot", icon: "database", active: false },
               { label: "Audit Log & Keamanan (2FA)", icon: "security", active: false },
@@ -77,7 +77,7 @@ export default function AdminPengaturanPage() {
                 Konfigurasi Google Gemini AI Engine
               </h2>
               <p className="text-body-sm text-tertiary mt-1">
-                Koneksi API model bahasa untuk WhatsApp Auto-closing dan rekomendasi restock bahan baku cerdas.
+                Koneksi API model bahasa untuk analisis rekomendasi restock bahan baku cerdas dan optimasi HPP.
               </p>
             </div>
 

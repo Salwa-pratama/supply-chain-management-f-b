@@ -35,8 +35,8 @@ export default function PemilikDashboardPage() {
               <span className="font-label-md text-label-md text-on-surface">Toko Buka (07:00 - 22:00)</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/35">
-              <span className="material-symbols-outlined text-[16px] text-primary-container">check_circle</span>
-              <span className="font-label-md text-label-md text-on-surface">WhatsApp Siap</span>
+              <span className="material-symbols-outlined text-[16px] text-primary-container">point_of_sale</span>
+              <span className="font-label-md text-label-md text-on-surface">POS Kasir Siap</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/35">
               <span className="material-symbols-outlined text-[16px] text-primary-container">sync</span>
@@ -132,7 +132,7 @@ export default function PemilikDashboardPage() {
             </div>
           </div>
         </div>
-        {/* 3. BAGIAN TENGAH (2 KOLOM: 65% GRAFIK + 35% WHATSAPP BOT CHAT) */}
+        {/* 3. BAGIAN TENGAH (2 KOLOM: 65% GRAFIK + 35% ANTRIAN DAPUR & POS) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Kolom Kiri: Tren Penjualan Harian & Arus Kas Transaksi (65% -> col-span-8) */}
           <div className="lg:col-span-8 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col justify-between">
@@ -140,7 +140,7 @@ export default function PemilikDashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-outline-variant/25">
               <div>
                 <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">Tren Penjualan & Arus Kas Transaksi</h2>
-                <p className="font-body-sm text-body-sm text-tertiary">Monitoring real-time per jam operasional kasir & WhatsApp</p>
+                <p className="font-body-sm text-body-sm text-tertiary">Monitoring real-time per jam operasional kasir & penjualan web</p>
               </div>
               {/* Quick Filters & Export */}
               <div className="flex items-center gap-3">
@@ -233,89 +233,79 @@ export default function PemilikDashboardPage() {
               <span className="font-label-sm text-label-sm text-primary font-medium">Sinkronisasi terakhir: 2 menit yang lalu</span>
             </div>
           </div>
-          {/* Kolom Kanan: Panel Obrolan WhatsApp AI Terbaru (35% -> col-span-4) */}
+          {/* Kolom Kanan: Panel Antrian Order & Live Kitchen Dispatch (35% -> col-span-4) */}
           <div className="lg:col-span-4 bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col justify-between">
             <div>
-              {/* Header Card WhatsApp */}
+              {/* Header Card Antrian */}
               <div className="flex items-center justify-between pb-4 border-b border-outline-variant/25">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#25D366]/10 flex items-center justify-center text-[#128C7E]">
-                    <span className="material-symbols-outlined text-[24px]">forum</span>
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <span className="material-symbols-outlined text-[24px]">soup_kitchen</span>
                   </div>
                   <div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">WhatsApp Gemini Bot</h3>
+                    <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">Antrian Dapur & POS</h3>
                     <span className="flex items-center gap-1 font-label-sm text-label-sm text-primary">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary-container" />
                       {" "}
-                      Auto-Closing Aktif
+                      Kitchen Dispatch Aktif
                     </span>
                   </div>
                 </div>
                 <span className="text-label-sm font-label-sm bg-secondary-container px-2 py-0.5 rounded-full text-primary font-bold">
-                  Live
+                  3 Menunggu
                 </span>
               </div>
-              {/* Chat Feed Preview */}
+              {/* Live Order Queue Preview */}
               <div className="flex flex-col gap-3 my-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                {/* Customer Bubble */}
-                <div className="flex flex-col items-start max-w-[85%]">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="font-label-sm text-label-sm text-on-surface font-semibold">Sarah (0812-9981-xxxx)</span>
-                    <span className="font-label-sm text-label-sm text-tertiary">14:28</span>
-                  </div>
-                  <div className="bg-surface-container-low text-on-surface p-3 rounded-2xl rounded-tl-sm text-body-sm font-body-sm border border-outline-variant/30">
-                    “Halo min, mau pesan Aren Latte 2 cup less sugar sama Toast Cokelat 1 ya buat takeaway jam 3.”
-                  </div>
-                </div>
-                {/* Bot Response Bubble */}
-                <div className="flex flex-col items-end max-w-[90%] ml-auto">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="font-label-sm text-label-sm text-primary font-semibold flex items-center gap-0.5">
-                      <span className="material-symbols-outlined text-[13px]">smart_toy</span>
-                      {" "}
-                      Gemini AI Bot
-                    </span>
-                    <span className="font-label-sm text-label-sm text-tertiary">14:28</span>
-                  </div>
-                  <div className="bg-secondary-container/40 text-on-surface p-3 rounded-2xl rounded-tr-sm text-body-sm font-body-sm border border-primary-container/20">
-                    <p>Halo Kak Sarah! Pesanan Anda telah dirangkum:</p>
-                    <div className="bg-surface-container-lowest p-2 rounded-lg my-1.5 text-label-sm font-label-sm border border-outline-variant/20">
-                      <div className="flex justify-between">
-                        <span>• 2x Aren Latte (Less Sugar)</span>
-                        <span>Rp 44.000</span>
+                {overview?.recentOrders && overview.recentOrders.length > 0 ? (
+                  overview.recentOrders.slice(0, 3).map((ord) => {
+                    const itemsText = ord.orderItems
+                      ?.map((it) => `${it.quantity}x ${it.product?.name || "Item"}`)
+                      .join(", ") || "-";
+                    return (
+                      <div
+                        key={ord.id}
+                        className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-label-sm text-label-sm font-bold text-primary font-mono">
+                            #TRX-{ord.id.slice(0, 8).toUpperCase()} • {ord.orderType || "Dine-in"}
+                          </span>
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold capitalize">
+                            {ord.status === "paid" ? "Terbayar" : ord.status}
+                          </span>
+                        </div>
+                        <p className="text-body-sm font-body-sm text-on-surface truncate" title={itemsText}>
+                          {itemsText}
+                        </p>
+                        <div className="flex items-center justify-between text-[12px] text-tertiary pt-1 border-t border-outline-variant/20">
+                          <span>Kasir: {ord.createdBy?.name || "Kasir Utama"}</span>
+                          <span className="font-bold text-on-surface font-mono">{rupiah(Number(ord.totalAmount))}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span>• 1x Choco Toast</span>
-                        <span>Rp 22.000</span>
-                      </div>
-                      <div className="flex justify-between font-bold border-t border-outline-variant/20 pt-1 mt-1">
-                        <span>Total</span>
-                        <span>Rp 66.000</span>
-                      </div>
-                    </div>
-                    <p className="text-[12px] text-tertiary">
-                      Invoice QRIS telah dikirim ke WhatsApp pelanggan. Status:
-                      {" "}
-                      <strong>Menunggu Verifikasi QRIS</strong>
-                    </p>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-6 text-tertiary text-xs">
+                    Belum ada antrean order baru.
                   </div>
-                </div>
+                )}
               </div>
             </div>
-            {/* Quick Chat Actions Bottom */}
+            {/* Quick Kitchen Dispatch Bottom */}
             <div className="pt-4 border-t border-outline-variant/25 flex flex-col gap-2">
               <div className="flex items-center justify-between text-body-sm font-body-sm">
-                <span className="text-tertiary">ID Pesanan Terkait:</span>
-                <span className="font-label-sm text-label-sm font-bold text-primary">#BPR-8822</span>
+                <span className="text-tertiary">Bahan Kritis Dapur:</span>
+                <span className="font-label-sm text-label-sm font-bold text-amber-600">Susu UHT &lt; 5 Liter</span>
               </div>
               <div className="flex gap-2">
-                <button className="flex-1 py-2 rounded-xl text-label-md font-label-md bg-surface-container-lowest border border-primary-container text-primary hover:bg-secondary-container/30 transition-colors flex items-center justify-center gap-1.5 active:scale-[0.98]">
-                  <span className="material-symbols-outlined text-[16px]">support_agent</span>
-                  <span>Ambil Alih Chat</span>
-                </button>
-                <button className="py-2 px-3 rounded-xl text-label-md font-label-md bg-primary-container text-surface-container-lowest hover:bg-primary transition-colors flex items-center justify-center active:scale-[0.98]" title="Konfirmasi Manual">
-                  <span className="material-symbols-outlined text-[18px]">done_all</span>
-                </button>
+                <a href="/pemilik/pesanan" className="flex-1 py-2 rounded-xl text-label-md font-label-md bg-surface-container-lowest border border-primary-container text-primary hover:bg-secondary-container/30 transition-colors flex items-center justify-center gap-1.5 active:scale-[0.98]">
+                  <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                  <span>Kelola Pesanan</span>
+                </a>
+                <a href="/kasir" className="py-2 px-3 rounded-xl text-label-md font-label-md bg-primary text-surface-container-lowest hover:bg-primary-container transition-colors flex items-center justify-center active:scale-[0.98]" title="Buka Kasir POS">
+                  <span className="material-symbols-outlined text-[18px]">point_of_sale</span>
+                </a>
               </div>
             </div>
           </div>

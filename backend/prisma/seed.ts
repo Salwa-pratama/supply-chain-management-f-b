@@ -28,8 +28,6 @@ async function main() {
   const hashPemasok = await bcrypt.hash("Pemasok#2025", saltRounds);
 
   // 1. Bersihkan data lama jika ada
-  await prisma.message.deleteMany();
-  await prisma.chatSession.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.customer.deleteMany();
@@ -43,7 +41,6 @@ async function main() {
   await prisma.businessSupplier.deleteMany();
   await prisma.supplier.deleteMany();
   await prisma.businessMember.deleteMany();
-  await prisma.bot.deleteMany();
   await prisma.business.deleteMany();
   await prisma.authToken.deleteMany();
   await prisma.user.deleteMany();
@@ -202,19 +199,7 @@ async function main() {
     },
   });
 
-  // Buat Bot AI
-  await prisma.bot.create({
-    data: {
-      businessId: business.id,
-      name: "Kenangan AI Bot",
-      waNumber: "081234567890",
-      waStatus: "connected",
-      agentPrompt: "Anda adalah asisten cerdas Kopi Kenangan Senopati. Layani pesanan dengan ramah, tawarkan rekomendasi kopi dan snack, lalu konfirmasi pesanan pelanggan secara otomatis.",
-      isActive: true,
-    },
-  });
-
-  console.log("☕ Bisnis F&B, Staf, & Bot WhatsApp berhasil dibuat.");
+  console.log("☕ Bisnis F&B & Staf berhasil dibuat.");
 
   // 5. Buat Bahan Baku Gudang (Ingredients)
   const ingKopi = await prisma.ingredient.create({
@@ -417,7 +402,45 @@ async function main() {
     },
   });
 
-  console.log("🚚 2 Purchase Orders (PO) berhasil dibuat.");
+  const po3 = await prisma.purchaseOrder.create({
+    data: {
+      businessId: business.id,
+      supplierId: supplier.id,
+      createdById: gudangUser.id,
+      status: "shipped",
+      totalAmount: 4250000,
+      deliveryNote: "SJ-TMS-2024-904",
+      driverInfo: "Pak Budi (B 7721 SCM - Chilled Van)",
+      qcStatus: "pending",
+      createdAt: new Date(Date.now() - 3600 * 1000 * 5),
+      purchaseOrderItems: {
+        create: [
+          { supplierItemId: supSusu.id, ingredientId: ingSusu.id, quantity: 100, price: 18000 },
+          { supplierItemId: supSirup.id, ingredientId: ingSirup.id, quantity: 15, price: 95000 },
+          { supplierItemId: supCup.id, ingredientId: ingCup.id, quantity: 20, price: 35000 },
+        ],
+      },
+    },
+  });
+
+  const po4 = await prisma.purchaseOrder.create({
+    data: {
+      businessId: business.id,
+      supplierId: supplier.id,
+      createdById: owner.id,
+      status: "sent",
+      totalAmount: 3400000,
+      qcStatus: "pending",
+      createdAt: new Date(Date.now() - 3600 * 1000 * 1),
+      purchaseOrderItems: {
+        create: [
+          { supplierItemId: supAren.id, ingredientId: ingAren.id, quantity: 40, price: 85000 },
+        ],
+      },
+    },
+  });
+
+  console.log("🚚 4 Purchase Orders (PO) berhasil dibuat.");
 
   // 8. Buat Transaksi Penjualan Awal (Kasir)
   const order1 = await prisma.order.create({
@@ -433,7 +456,7 @@ async function main() {
       paidAmount: 50000,
       changeAmount: 6000,
       status: "paid",
-      createdAt: new Date(Date.now() - 3600 * 1000),
+      createdAt: new Date(Date.now() - 3600 * 1000 * 4),
       orderItems: {
         create: [
           { productId: prodMantan.id, quantity: 2, price: 22000 },
@@ -455,11 +478,78 @@ async function main() {
       paidAmount: 50000,
       changeAmount: 0,
       status: "paid",
-      createdAt: new Date(Date.now() - 1800 * 1000),
+      createdAt: new Date(Date.now() - 3600 * 1000 * 3),
       orderItems: {
         create: [
           { productId: prodAvocado.id, quantity: 1, price: 32000 },
           { productId: prodToast.id, quantity: 1, price: 18000 },
+        ],
+      },
+    },
+  });
+
+  const order3 = await prisma.order.create({
+    data: {
+      businessId: business.id,
+      createdById: kasirUser.id,
+      source: "web",
+      orderType: "takeaway",
+      totalAmount: 120000,
+      taxAmount: 0,
+      discountAmount: 0,
+      paymentMethod: "qris",
+      paidAmount: 120000,
+      changeAmount: 0,
+      status: "paid",
+      createdAt: new Date(Date.now() - 3600 * 1000 * 2),
+      orderItems: {
+        create: [
+          { productId: prodCaramel.id, quantity: 3, price: 28000 },
+          { productId: prodToast.id, quantity: 2, price: 18000 },
+        ],
+      },
+    },
+  });
+
+  const order4 = await prisma.order.create({
+    data: {
+      businessId: business.id,
+      createdById: kasirUser.id,
+      source: "kasir",
+      orderType: "dine-in",
+      totalAmount: 70000,
+      taxAmount: 0,
+      discountAmount: 0,
+      paymentMethod: "cash",
+      paidAmount: 100000,
+      changeAmount: 30000,
+      status: "paid",
+      createdAt: new Date(Date.now() - 3600 * 1000),
+      orderItems: {
+        create: [
+          { productId: prodPaket.id, quantity: 2, price: 35000 },
+        ],
+      },
+    },
+  });
+
+  const order5 = await prisma.order.create({
+    data: {
+      businessId: business.id,
+      createdById: kasirUser.id,
+      source: "kasir",
+      orderType: "takeaway",
+      totalAmount: 88000,
+      taxAmount: 0,
+      discountAmount: 0,
+      paymentMethod: "qris",
+      paidAmount: 88000,
+      changeAmount: 0,
+      status: "paid",
+      createdAt: new Date(Date.now() - 1800 * 1000),
+      orderItems: {
+        create: [
+          { productId: prodMantan.id, quantity: 4, price: 22000 },
         ],
       },
     },

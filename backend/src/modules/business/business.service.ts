@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
+import { AddMemberDto } from "./dto/add-member.dto";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class BusinessService {
@@ -57,7 +59,6 @@ export class BusinessService {
             },
           },
         },
-        bot: true,
       },
     });
 
@@ -84,5 +85,116 @@ export class BusinessService {
         },
       },
     });
+  }
+
+  /**
+   * Mengambil daftar staf anggota (kasir & gudang) untuk bisnis user
+   */
+  async getMembers(userId: string) {
+    const businessId = await this.getBusinessForUser(userId);
+    return this.prisma.businessMember.findMany({
+      where: { businessId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            isActive: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  /**
+   * Menambahkan staf baru (kasir / manajer_gudang) ke bisnis owner
+   */
+  async addMember(userId: string, dto: AddMemberDto) {
+    const businessId = await this.getBusinessForUser(userId);
+    const normalizedEmail = dto.email.trim().toLowerCase();
+
+    // 1. Cek apakah user sudah terdaftar di database
+    let user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!user) {
+      const password = dto.password || "Staf#2025";
+      const passwordHash = await bcrypt.hash(password, 10);
+      user = await this.prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          name: dto.name.trim(),
+          passwordHash,
+          role: dto.role,
+          isActive: true,
+        },
+      });
+    }
+
+    // 2. Cek apakah sudah terdaftar di businessMember untuk bisnis ini
+    const existingMember = await this.prisma.businessMember.findUnique({
+      where: {
+        businessId_userId: {
+          businessId,
+          userId: user.id,
+        },
+      },
+    });
+
+    if (existingMember) {
+      throw new ConflictException("Pengguna ini sudah terdaftar sebagai anggota bisnis Anda.");
+    }
+
+    // 3. Daftarkan sebagai anggota bisnis
+    return this.prisma.businessMember.create({
+      data: {
+        businessId,
+        userId: user.id,
+        role: dto.role,
+        isActive: true,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Mengubah status aktif/nonaktif staf
+   */
+  async toggleMemberStatus(userId: string, memberId: string) {
+    const businessId = await this.getBusinessForUser(userId);
+    const member = await this.prisma.businessMember.findFirst({
+      where: { id: memberId, businessId },
+    });
+
+    if (!member) {
+      throw new NotFoundException("Data staf tidak ditemukan di bisnis Anda.");
+    }
+
+    const updated = await this.prisma.businessMember.update({
+      where: { id: memberId },
+      data: { isActive: !member.isActive },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, role: true, isActive: true },
+        },
+      },
+    });
+
+    return updated;
   }
 }

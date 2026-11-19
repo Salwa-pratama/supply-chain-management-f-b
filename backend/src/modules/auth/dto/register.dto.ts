@@ -56,8 +56,13 @@ export class RegisterDto {
 
   @ApiPropertyOptional({
     example: '08123456789',
-    description: 'Nomor WhatsApp atau telepon operasional usaha',
+    description: 'Nomor telepon operasional usaha',
   })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  // Backward compatibility alias for phone
   @IsOptional()
   @IsString()
   whatsapp?: string;

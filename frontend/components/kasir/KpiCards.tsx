@@ -9,11 +9,11 @@ function rupiah(n: number) {
 export default function KpiCards() {
   const { data: stats } = useKasirStats();
 
-  const trxCount = stats ? stats.transactionCount : 84;
-  const totalRev = stats ? stats.totalSales : 2845000;
-  const avgVal = stats ? stats.avgTicket : 33800;
-  const qris = stats ? stats.paymentSplit.qris : 42;
-  const cash = stats ? stats.paymentSplit.cash : 38;
+  const trxCount = stats ? stats.transactionCount : 0;
+  const totalRev = stats ? stats.totalSales : 0;
+  const avgVal = stats ? stats.avgTicket : 0;
+  const qris = stats ? stats.paymentSplit.qris : 0;
+  const cash = stats ? stats.paymentSplit.cash : 0;
 
   return (
     <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

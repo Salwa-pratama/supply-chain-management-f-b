@@ -49,5 +49,6 @@ export interface RegisterPayload {
   role?: UserRole;
   businessName?: string;
   category?: string;
+  phone?: string;
   whatsapp?: string;
 }

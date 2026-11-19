@@ -388,14 +388,14 @@ export default function RegisterForm() {
           </div>
         </div>
 
-        {/* Baris 3: WhatsApp */}
+        {/* Baris 3: Nomor Telepon Operasional */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label
               className="block text-label-md font-label-md text-on-surface"
-              htmlFor="whatsapp_number"
+              htmlFor="phone_number"
             >
-              Nomor WhatsApp Aktif <Req />
+              Nomor Telepon Operasional <Req />
             </label>
           </div>
           <div className="relative flex items-center">
@@ -404,8 +404,8 @@ export default function RegisterForm() {
               <span className="h-4 w-px bg-[rgba(148,185,169,0.6)] mx-1" />
             </span>
             <input
-              id="whatsapp_number"
-              name="whatsapp_number"
+              id="phone_number"
+              name="phone_number"
               type="tel"
               required
               autoComplete="tel-national"
@@ -416,8 +416,7 @@ export default function RegisterForm() {
             />
           </div>
           <p className="text-body-sm font-body-sm text-outline mt-1">
-            Nomor ini digunakan untuk kirim notifikasi pesanan masuk & rekap
-            transaksi harian otomatis.
+            Nomor ini digunakan untuk kontak operasional dan verifikasi usaha Anda.
           </p>
         </div>
 

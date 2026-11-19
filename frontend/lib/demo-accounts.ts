@@ -8,7 +8,7 @@
 export type Role = "super_admin" | "owner" | "manajer_gudang" | "pemasok" | "kasir";
 
 export type DemoAccount = {
-  identifier: string; // email atau nomor WhatsApp, huruf kecil
+  identifier: string; // email, huruf kecil
   password: string;
   role: Role;
 };

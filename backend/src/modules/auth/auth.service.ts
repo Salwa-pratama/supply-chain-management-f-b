@@ -58,6 +58,8 @@ export class AuthService {
         let businessData = null;
         let supplierData = null;
 
+        const contactPhone = dto.phone || dto.whatsapp || null;
+
         // 2. Jika Owner F&B: Otomatis buat entitas Business
         if (assignedRole === 'owner') {
           businessData = await tx.business.create({
@@ -65,7 +67,7 @@ export class AuthService {
               userId: user.id,
               name: businessTitle,
               category: dto.category || null,
-              phoneBusiness: dto.whatsapp || null,
+              phoneBusiness: contactPhone,
             },
           });
         }
@@ -77,7 +79,7 @@ export class AuthService {
               userId: user.id,
               name: businessTitle,
               category: dto.category || null,
-              phone: dto.whatsapp || null,
+              phone: contactPhone,
               isActive: true,
             },
           });

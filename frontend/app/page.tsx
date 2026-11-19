@@ -79,8 +79,8 @@ export default function LandingPage() {
                   Otomasi Pesanan, Kelola Rantai Pasok F&B, dan Rekap Transaksi Tanpa Ribet
                 </h1>
                 <p className="text-body-lg font-body-lg text-on-surface-variant max-w-2xl leading-relaxed">
-                  Integrasi tanpa celah dari Pemasok Bahan Baku, Dapur & Barista, Kasir POS, hingga WhatsApp
-                  AI Assistant. Kendalikan omset harian dan HPP gramasi akurat dalam satu dasbor pintar.
+                  Integrasi tanpa celah dari Pemasok Bahan Baku, Dapur & Barista, Kasir POS, hingga Web Order
+                  Cloud Management. Kendalikan omset harian dan HPP gramasi akurat dalam satu dasbor pintar.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 pt-2">
                   <Link
@@ -199,17 +199,17 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </div>
-                  {/* WhatsApp AI Notification Widget */}
+                  {/* Web POS Live Notification Widget */}
                   <div className="p-3.5 rounded-2xl bg-secondary-fixed/40 border border-secondary/20 flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-[18px]" data-icon="chat">
-                        chat
+                      <span className="material-symbols-outlined text-[18px]" data-icon="receipt_long">
+                        receipt_long
                       </span>
                     </div>
                     <div className="space-y-0.5">
                       <div className="flex items-center justify-between">
                         <p className="text-label-sm font-label-sm text-primary font-bold">
-                          WhatsApp Gemini Assistant
+                          Live Order & Stock Sync
                         </p>
                         <span className="text-[10px] text-tertiary">1 mnt lalu</span>
                       </div>
@@ -349,32 +349,31 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            {/* Fitur 3: Bot WhatsApp AI Otomatis (Span 5) */}
+            {/* Fitur 3: Web Online Order & Menu Digital (Span 5) */}
             <div className="md:col-span-5 bg-surface-container-lowest rounded-3xl p-8 border border-outline-variant/50 shadow-sm hover:border-primary/50 transition-all flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-2xl bg-secondary-fixed text-primary flex items-center justify-center mb-6">
-                  <span className="material-symbols-outlined text-[28px]" data-icon="smart_toy">
-                    smart_toy
+                  <span className="material-symbols-outlined text-[28px]" data-icon="devices">
+                    devices
                   </span>
                 </div>
                 <span className="text-label-sm font-label-sm text-primary font-bold">
-                  PILAR 03 — GEMINI POWERED AI
+                  PILAR 03 — DIGITAL ORDER & WEB POS
                 </span>
                 <h3 className="text-headline-lg-mobile md:text-headline-lg font-headline-lg text-on-surface mt-2 mb-3">
-                  Bot WhatsApp AI Otomatis
+                  Web Online Order & Kasir Cloud
                 </h3>
                 <p className="text-body-md font-body-md text-on-surface-variant mb-6 leading-relaxed">
-                  Terima pesanan takeaway atau delivery pelanggan otomatis 24/7 langsung via WhatsApp tanpa
-                  memaksa pelanggan mengunduh aplikasi tambahan. AI memahami pesanan rumit dan preferensi
-                  kustomisasi rasa.
+                  Terima pesanan takeaway atau delivery pelanggan otomatis secara real-time via website store
+                  tanpa memotong komisi pihak ketiga. Pelanggan dapat memesan dari browser perangkat apa pun.
                 </p>
               </div>
               <div className="bg-secondary-fixed/30 p-4 rounded-2xl border border-secondary/20 flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary text-[24px]" data-icon="forum">
-                  forum
+                <span className="material-symbols-outlined text-primary text-[24px]" data-icon="cloud_done">
+                  cloud_done
                 </span>
                 <p className="text-body-sm font-body-sm text-on-surface font-medium">
-                  Bisa melayani {">"}500 percakapan order bersamaan tanpa antrean.
+                  Tersinkronisasi instan ke antrean kitchen dan update stok gudang.
                 </p>
               </div>
             </div>
@@ -476,7 +475,7 @@ export default function LandingPage() {
                 </div>
                 <h4 className="text-headline-md font-headline-md text-on-surface mb-2">Konsumen Akhir</h4>
                 <p className="text-body-md font-body-md text-on-surface-variant">
-                  Pelanggan memesan via meja atau WhatsApp Assistant dengan pengalaman mulus, bayar via QRIS
+                  Pelanggan memesan via meja QR atau Kasir Web POS dengan pengalaman mulus, bayar via QRIS
                   dinamis, dan menerima struk digital ramah lingkungan.
                 </p>
                 <div className="mt-6 flex items-center gap-2 text-label-sm font-label-sm text-primary font-bold">
@@ -560,8 +559,8 @@ export default function LandingPage() {
                   </span>
                 </div>
                 <p className="text-body-md font-body-md text-on-surface-variant italic leading-relaxed">
-                  “Fitur WhatsApp Bot AI sangat mengubah permainan. Pelanggan kantoran sekitar resto pesan
-                  makan siang lewat chat tanpa ribet antri kasir, omset melonjak hingga 45% dalam dua bulan.”
+                  “Sistem Web POS dan manajemen inventarisnya sangat solid. Pelanggan bisa order cepat tanpa
+                  ribet antri panjang kasir, omset melonjak hingga 45% dalam dua bulan pemakaian.”
                 </p>
               </div>
               <div className="pt-6 border-t border-outline-variant/30 flex items-center gap-3">

@@ -128,7 +128,7 @@ export default function MonitoringPage() {
           </div>
           <div className="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between text-body-sm font-body-sm">
             <span className="text-tertiary">Kanal Utama:</span>
-            <span className="font-semibold text-primary">Kasir POS & WhatsApp</span>
+            <span className="font-semibold text-primary">Kasir POS & Web Store</span>
           </div>
         </div>
       </div>
@@ -353,8 +353,8 @@ export default function MonitoringPage() {
                     <span className="font-bold text-on-surface">POS Senopati #01</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-tertiary">WhatsApp AI:</span>
-                    <span className="font-bold text-on-surface">Bot AI Auto-Order</span>
+                    <span className="text-tertiary">Online Store:</span>
+                    <span className="font-bold text-on-surface">Web POS Ordering</span>
                   </div>
                   <div className="flex items-center justify-between pt-1 border-t border-outline-variant/20">
                     <span className="text-tertiary">Armada Antar:</span>
@@ -671,7 +671,7 @@ export default function MonitoringPage() {
                 Super Admin BAPER
               </h3>
               <p className="text-body-sm font-body-sm text-tertiary mt-2">
-                Mengatur validasi legal merchant F&B, audit integritas log data transaksi, koneksi WhatsApp
+                Mengatur validasi legal merchant F&B, audit integritas log data transaksi, koneksi Web POS
                 Cloud API, dan billing platform.
               </p>
             </div>
@@ -728,7 +728,7 @@ export default function MonitoringPage() {
               <ul className="text-body-sm font-body-sm text-tertiary flex flex-col gap-2 mb-3">
                 <li className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px] text-primary">check_circle</span>
-                  <span>Penerimaan PO via WA & Portal</span>
+                  <span>Penerimaan PO via Web Portal & Email</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px] text-primary">check_circle</span>
@@ -753,13 +753,13 @@ export default function MonitoringPage() {
                 </div>
                 <div>
                   <h4 className="text-label-md font-label-md text-on-surface font-bold">Konsumen Akhir</h4>
-                  <span className="text-[11px] text-tertiary">Dine-in, Takeaway & WA</span>
+                  <span className="text-[11px] text-tertiary">Dine-in, Takeaway & Web</span>
                 </div>
               </div>
               <ul className="text-body-sm font-body-sm text-tertiary flex flex-col gap-2 mb-3">
                 <li className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px] text-primary">check_circle</span>
-                  <span>Pemesanan Menu via Bot WhatsApp</span>
+                  <span>Pemesanan Menu via Kasir & Web POS</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px] text-primary">check_circle</span>

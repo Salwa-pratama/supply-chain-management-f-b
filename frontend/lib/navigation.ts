@@ -87,15 +87,9 @@ export const DASHBOARD_NAV_CONFIG: Record<DashboardRole, DashboardConfig> = {
           { label: "Kitchen & Produksi", href: "/pemilik/produksi", icon: "blender" },
           { label: "Distribusi Outlet", href: "/pemilik/distribusi", icon: "delivery_dining" },
           { label: "Pesanan Pelanggan", href: "/pemilik/pesanan", icon: "receipt_long" },
+          { label: "Kelola Karyawan", href: "/pemilik/staf", icon: "badge" },
           { label: "Monitoring Rantai Pasok", href: "/pemilik/monitoring", icon: "schema" },
           { label: "Kasir (POS)", href: "/kasir", icon: "point_of_sale" },
-        ],
-      },
-      {
-        title: "Komunikasi & AI",
-        items: [
-          { label: "Chat WhatsApp", href: "/pemilik/chat-whatsapp", icon: "chat", badge: "3 Baru" },
-          { label: "Konfigurasi Bot AI", href: "/pemilik/bot-ai", icon: "smart_toy" },
         ],
       },
       {

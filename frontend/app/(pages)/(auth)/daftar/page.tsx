@@ -50,12 +50,12 @@ export default function DaftarPage() {
               <div className="mt-6 space-y-4">
                 <div className="flex items-start gap-3.5 p-3 rounded-xl bg-surface-container-lowest/80 border border-[rgba(148,185,169,0.25)]">
                   <div className="w-8 h-8 rounded-lg bg-[#E8F3EC] text-primary flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-lg" data-icon="smart_toy">smart_toy</span>
+                    <span className="material-symbols-outlined text-lg" data-icon="point_of_sale">point_of_sale</span>
                   </div>
                   <div>
-                    <h2 className="text-label-lg font-label-lg text-on-surface">Otomasi Pesanan via WhatsApp AI</h2>
+                    <h2 className="text-label-lg font-label-lg text-on-surface">Kasir POS & Pemesanan Web Terpadu</h2>
                     <p className="text-body-sm font-body-sm text-on-surface-variant mt-0.5">
-                      Bot cerdas membaca chat pesanan pembeli, konfirmasi otomatis, dan mencatat tagihan instan.
+                      Kelola transaksi dine-in, takeaway, serta pesanan online web kasir secara real-time dan terpusat.
                     </p>
                   </div>
                 </div>
@@ -107,7 +107,7 @@ export default function DaftarPage() {
                 <span className="text-label-sm font-label-sm text-on-surface-variant ml-1 font-bold">5.0 / 5.0</span>
               </div>
               <p className="text-body-md font-body-md text-on-surface italic mb-4 leading-relaxed relative z-10">
-                “Dulu tiap jam 10 malam pusing rekap nota pesanan WhatsApp dan cocokin stok daging. Sejak pakai BAPER, jam 9 malam resto beres tutup buku tanpa ada uang selisih sepeser pun.”
+                “Dulu tiap jam 10 malam pusing rekap nota pesanan kasir dan cocokin stok daging. Sejak pakai BAPER, jam 9 malam resto beres tutup buku tanpa ada uang selisih sepeser pun.”
               </p>
               <div className="flex items-center gap-3 relative z-10">
                 <div className="w-11 h-11 rounded-full bg-[#E8F3EC] flex items-center justify-center text-primary font-bold border border-primary/20 shrink-0">

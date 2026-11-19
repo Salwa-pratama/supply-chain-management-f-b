@@ -71,7 +71,7 @@ export default function LoginPage() {
     if (nextErrors.identifier || nextErrors.password) {
       const parsed = {
         title: "Kredensial Belum Lengkap",
-        message: "Mohon isi email atau nomor WhatsApp dan kata sandi Anda.",
+        message: "Mohon isi email akun dan kata sandi Anda.",
       };
       setErrorDetails(parsed);
       toast.warning(parsed.message, parsed.title);
@@ -210,13 +210,13 @@ export default function LoginPage() {
 
             {/* Form */}
             <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-              {/* Email / WhatsApp */}
+              {/* Email */}
               <div className="space-y-1.5">
                 <label
                   htmlFor="username-input"
                   className="block font-label-md text-label-md text-[#172033] font-semibold"
                 >
-                  Email atau Nomor WhatsApp
+                  Email Akun
                 </label>
                 <div className="relative flex items-center">
                   <span className="absolute left-4 text-[#7B8794] flex items-center pointer-events-none">
@@ -225,17 +225,17 @@ export default function LoginPage() {
                   <input
                     id="username-input"
                     name="identifier"
-                    type="text"
+                    type="email"
                     autoComplete="username"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="nama@tokoanda.com atau 08123456789"
+                    placeholder="nama@tokoanda.com"
                     className={`${inputBase} pr-4 ${errors.identifier ? inputError : inputNormal}`}
                   />
                 </div>
                 {errors.identifier && (
                   <p className="font-body-sm text-body-sm text-[#B54747] pt-1">
-                    Email atau nomor WhatsApp wajib diisi.
+                    Email akun wajib diisi.
                   </p>
                 )}
               </div>

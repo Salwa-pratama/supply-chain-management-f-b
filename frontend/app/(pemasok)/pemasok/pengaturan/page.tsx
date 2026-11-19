@@ -26,7 +26,7 @@ export default function PemasokPengaturanPage() {
               Pengaturan Akun &amp; Preferensi Pasokan
             </h1>
             <p className="text-body-md font-body-md text-tertiary mt-1">
-              Atur informasi penanggung jawab (PIC), rekening bank penampung B2B, ketentuan SLA pesanan, dan integrasi WhatsApp alert.
+              Atur informasi penanggung jawab (PIC), rekening bank penampung B2B, ketentuan SLA pesanan, dan preferensi notifikasi alert.
             </p>
           </div>
 
@@ -135,7 +135,7 @@ export default function PemasokPengaturanPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-tertiary uppercase">No. WhatsApp Darurat</label>
+                  <label className="text-xs font-bold text-tertiary uppercase">No. Telepon Darurat</label>
                   <input
                     type="tel"
                     defaultValue="+62 812-9988-7711"
@@ -254,8 +254,8 @@ export default function PemasokPengaturanPage() {
               <div className="divide-y divide-outline-variant/20">
                 {[
                   {
-                    title: "Kirim Notifikasi WhatsApp untuk PO Mendesak",
-                    desc: "Sistem mengirimkan ringkasan pesan ke WA PIC saat gerai memesan pasokan same-day.",
+                    title: "Kirim Notifikasi SMS / Push untuk PO Mendesak",
+                    desc: "Sistem mengirimkan ringkasan pesan darurat ke PIC saat gerai memesan pasokan same-day.",
                     enabled: true,
                   },
                   {

@@ -36,3 +36,7 @@ export function useAdminStats() {
     staleTime: 60 * 1000,
   });
 }
+
+export function useAdminPlatformStats() {
+  return useAdminStats();
+}

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { usePurchaseOrders } from "@/features/purchase-orders/hooks/use-purchase-orders";
+import { useOrders } from "@/features/orders/hooks/use-orders";
 
 type StatusAlur =
   | "Menunggu Konfirmasi"
   | "Sedang Diproses"
   | "Dalam Pengiriman"
-  | "Produksi Berlangsung"
-  | "Siap Dijual"
   | "Selesai";
 
 type Aktivitas = {
@@ -22,85 +22,61 @@ type Aktivitas = {
   aksi: string;
 };
 
-// Data contoh. Ganti dengan hasil pemanggilan API backend (Go) nanti.
-const AKTIVITAS: Aktivitas[] = [
-  {
-    id: "PO-2025-091",
-    entitas: "Sentra Kemasan Food-grade",
-    keterangan: "Pemasok Paper Cup 12oz",
-    item: "1.000 Pcs Cup + Tutup Lid",
-    nilai: "Rp 1.450.000",
-    status: "Menunggu Konfirmasi",
-    waktu: "10:42 WIB",
-    aksi: "Kirim Reminder",
-  },
-  {
-    id: "PO-2025-090",
-    entitas: "CV Dairy Makmur Sentosa",
-    keterangan: "Pemasok Susu Pasteurisasi",
-    item: "50 Karton Fresh Milk 1L",
-    nilai: "Rp 2.100.000",
-    status: "Sedang Diproses",
-    waktu: "10:15 WIB",
-    aksi: "Cek Faktur",
-  },
-  {
-    id: "PO-2025-089",
-    entitas: "PT Tani Makmur Sejahtera",
-    keterangan: "Petani Kopi Mandheling",
-    item: "25 Kg Biji Kopi Roast Arabika",
-    nilai: "Rp 6.250.000",
-    status: "Dalam Pengiriman",
-    waktu: "09:50 WIB",
-    aksi: "Lacak Kurir",
-  },
-  {
-    id: "BATCH-KTC-04",
-    entitas: "Kitchen & Pastry Dapur Utama",
-    keterangan: "Baker Shift Pagi",
-    item: "40 pcs Croissant Mentega Panas",
-    nilai: "Rp 480.000 (HPP)",
-    status: "Produksi Berlangsung",
-    waktu: "09:30 WIB",
-    aksi: "QC Dapur",
-  },
-  {
-    id: "BATCH-BAR-08",
-    entitas: "Station Barista Senopati",
-    keterangan: "Cold Brew & Espresso Base",
-    item: "60 Botol Cold Brew Caramel 250ml",
-    nilai: "Rp 1.500.000 (Retail)",
-    status: "Siap Dijual",
-    waktu: "09:10 WIB",
-    aksi: "Masuk Kasir POS",
-  },
-  {
-    id: "ORD-WA-2041",
-    entitas: "Konsumen (Ibu Kartika - SCBD)",
-    keterangan: "Order via BAPER WhatsApp Bot",
-    item: "12 Cup Kopi Susu Aren + 6 Pastry",
-    nilai: "Rp 432.000 (Lunas)",
-    lunas: true,
-    status: "Selesai",
-    waktu: "08:45 WIB",
-    aksi: "Lihat Bukti",
-  },
-];
-
 const STATUS_STYLE: Record<StatusAlur, string> = {
   "Menunggu Konfirmasi": "bg-[#FFF9E6] text-[#B7791F] border border-[#B7791F]/20",
   "Sedang Diproses": "bg-[#E8F3EC] text-primary border border-primary/20",
-  "Dalam Pengiriman": "bg-secondary-container text-on-secondary-container",
-  "Produksi Berlangsung": "bg-primary text-surface-container-lowest",
-  "Siap Dijual": "bg-[#E8F3EC] text-primary border border-primary/20",
-  Selesai: "bg-secondary-container text-on-secondary-container",
+  "Dalam Pengiriman": "bg-blue-50 text-blue-700 border border-blue-200",
+  Selesai: "bg-[#E8F3EC] text-[#137A48] border border-primary/20",
 };
 
 const SEMUA = "Semua Status Alur SCM";
 
 export default function ActivityTable() {
+  const { data: purchaseOrders = [] } = usePurchaseOrders();
+  const { data: orders = [] } = useOrders();
   const [filter, setFilter] = useState<string>(SEMUA);
-  const baris = filter === SEMUA ? AKTIVITAS : AKTIVITAS.filter((a) => a.status === filter);
+
+  const allActivities: Aktivitas[] = useMemo(() => {
+    const list: Aktivitas[] = [];
+
+    // Map POs
+    purchaseOrders.forEach((po) => {
+      let st: StatusAlur = "Menunggu Konfirmasi";
+      if (po.qcStatus === "passed" || po.status === "received") st = "Selesai";
+      else if (po.status === "shipped") st = "Dalam Pengiriman";
+      else if (po.status === "confirmed") st = "Sedang Diproses";
+
+      list.push({
+        id: `#PO-${po.id.slice(0, 8).toUpperCase()}`,
+        entitas: po.supplier?.name || "Mitra Pemasok",
+        keterangan: "Pemasok Bahan Baku",
+        item: po.purchaseOrderItems.map((i) => `${i.quantity} ${i.ingredient?.name || i.supplierItem?.name || "Bahan"}`).join(", "),
+        nilai: `Rp ${Number(po.totalAmount).toLocaleString("id-ID")}`,
+        status: st,
+        waktu: new Date(po.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB",
+        aksi: "Detail PO",
+      });
+    });
+
+    // Map POS Orders
+    orders.forEach((o) => {
+      list.push({
+        id: `#TRX-${o.id.slice(0, 8).toUpperCase()}`,
+        entitas: o.createdBy?.name || "Kasir Outlet",
+        keterangan: `Pesanan ${o.orderType || "Dine-in"} POS`,
+        item: o.orderItems.map((i) => `${i.quantity}x ${i.product?.name || "Menu"}`).join(", "),
+        nilai: `Rp ${Number(o.totalAmount).toLocaleString("id-ID")}`,
+        lunas: true,
+        status: "Selesai",
+        waktu: new Date(o.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB",
+        aksi: "Lihat Struk",
+      });
+    });
+
+    return list;
+  }, [purchaseOrders, orders]);
+
+  const baris = filter === SEMUA ? allActivities : allActivities.filter((a) => a.status === filter);
 
   return (
     <section className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col gap-5">
@@ -110,7 +86,7 @@ export default function ActivityTable() {
             Aktivitas Alur SCM Real-time Hari Ini
           </h2>
           <p className="text-body-sm font-body-sm text-tertiary">
-            Rekap menyeluruh pergerakan bahan masuk, tahapan produksi dapur, dan penerimaan pesanan kasir.
+            Rekap menyeluruh pergerakan bahan masuk, tahapan pengiriman, dan transaksi kasir live database.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -130,14 +106,6 @@ export default function ActivityTable() {
               expand_more
             </span>
           </div>
-          <button
-            type="button"
-            title="Muat Ulang Data"
-            onClick={() => setFilter(SEMUA)} // TODO: ambil ulang data dari API
-            className="p-2 border border-outline-variant/40 rounded-xl hover:bg-[#F5F8F6] transition-colors"
-          >
-            <span className="material-symbols-outlined text-[20px] text-tertiary">refresh</span>
-          </button>
         </div>
       </div>
 
@@ -147,7 +115,7 @@ export default function ActivityTable() {
             <tr className="bg-[#F5F8F6] text-label-sm font-label-sm text-tertiary uppercase tracking-wider border-b border-outline-variant/30 h-11">
               <th className="py-3 px-4">ID Transaksi / Alur</th>
               <th className="py-3 px-4">Entitas Terkait</th>
-              <th className="py-3 px-4">Item & Kuantitas</th>
+              <th className="py-3 px-4">Item &amp; Kuantitas</th>
               <th className="py-3 px-4">Nilai / Estimasi</th>
               <th className="py-3 px-4">Status Tahapan</th>
               <th className="py-3 px-4">Waktu Pembaruan</th>
@@ -157,14 +125,14 @@ export default function ActivityTable() {
           <tbody className="divide-y divide-outline-variant/20 text-body-sm font-body-sm">
             {baris.map((a) => (
               <tr key={a.id} className="hover:bg-[#F9FBFA] transition-colors">
-                <td className="py-3.5 px-4 font-bold text-on-surface">{a.id}</td>
+                <td className="py-3.5 px-4 font-bold text-on-surface font-mono">{a.id}</td>
                 <td className="py-3.5 px-4">
                   <div className="font-semibold text-on-surface">{a.entitas}</div>
                   <div className="text-[11px] text-tertiary">{a.keterangan}</div>
                 </td>
-                <td className="py-3.5 px-4">{a.item}</td>
+                <td className="py-3.5 px-4 text-xs max-w-xs truncate">{a.item}</td>
                 <td
-                  className={`py-3.5 px-4 ${a.lunas ? "font-bold text-primary" : "font-semibold text-on-surface"}`}
+                  className={`py-3.5 px-4 font-mono ${a.lunas ? "font-bold text-primary" : "font-semibold text-on-surface"}`}
                 >
                   {a.nilai}
                 </td>
@@ -189,7 +157,7 @@ export default function ActivityTable() {
             {baris.length === 0 && (
               <tr>
                 <td colSpan={7} className="py-10 px-4 text-center text-tertiary">
-                  Belum ada alur dengan status ini.
+                  Belum ada aktivitas tercatat di alur ini.
                 </td>
               </tr>
             )}
@@ -198,22 +166,7 @@ export default function ActivityTable() {
       </div>
 
       <div className="flex items-center justify-between text-body-sm font-body-sm text-tertiary pt-2">
-        <span>Menampilkan {baris.length} dari 48 alur rantai pasok aktif hari ini</span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="px-3 py-1.5 rounded-lg border border-outline-variant/40 hover:bg-[#F5F8F6] text-on-surface font-semibold text-label-sm"
-          >
-            Sebelumnya
-          </button>
-          <span className="px-2 font-bold text-primary text-label-sm">1</span>
-          <button
-            type="button"
-            className="px-3 py-1.5 rounded-lg border border-outline-variant/40 hover:bg-[#F5F8F6] text-on-surface font-semibold text-label-sm"
-          >
-            Berikutnya
-          </button>
-        </div>
+        <span>Menampilkan {baris.length} alur rantai pasok aktif live database</span>
       </div>
     </section>
   );

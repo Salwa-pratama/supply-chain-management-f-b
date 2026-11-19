@@ -1,10 +1,17 @@
-import type { Metadata } from "next";
+"use client";
+
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import UserTable from "@/components/admin/UserTable";
-
-export const metadata: Metadata = { title: "Dashboard Super Admin | BAPER" };
+import { useAdminStats } from "@/features/dashboard/hooks/use-dashboard";
 
 export default function AdminDashboardPage() {
+  const { data: stats } = useAdminStats();
+
+  const totalBisnis = stats?.totalBusinesses ?? 0;
+  const totalPemasok = stats?.totalSuppliers ?? 0;
+  const totalUsers = stats?.totalUsers ?? 0;
+  const grossRev = stats?.platformGmv ?? 0;
+
   return (
     <>
       {/* 1. Header Section: Title & Actions */}
@@ -29,16 +36,6 @@ export default function AdminDashboardPage() {
             <span className="material-symbols-outlined text-[18px]">download_for_offline</span>
             <span>Unduh Laporan Audit</span>
           </button>
-          {/* Button: Kelola Hak Akses */}
-          <button className="h-11 px-6 bg-primary-container text-surface-container-lowest rounded-2xl font-label-lg text-label-lg flex items-center gap-2 hover:bg-[#0D6038] active:scale-[0.98] transition-all shadow-[0_4px_20px_-2px_rgba(19,122,72,0.25)]">
-            <span
-              className="material-symbols-outlined text-[18px]"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              shield_person
-            </span>
-            <span>Kelola Hak Akses</span>
-          </button>
         </div>
       </section>
       {/* 2. Baris Statistik Ekosistem (KPI Bento Cards) */}
@@ -52,14 +49,14 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="font-headline-lg text-headline-lg text-[#172033]">1.240</span>
+            <span className="font-headline-lg text-headline-lg text-[#172033]">{totalBisnis}</span>
             <span className="font-body-sm text-body-sm text-tertiary">Bisnis Aktif</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-[#E8F3EC] text-[#137A48] font-bold">
-              <span className="material-symbols-outlined text-[13px] mr-0.5">trending_up</span> +32
+              <span className="material-symbols-outlined text-[13px] mr-0.5">trending_up</span> Live
             </span>
-            <span className="font-body-sm text-body-sm text-tertiary">pendaftaran minggu ini</span>
+            <span className="font-body-sm text-body-sm text-tertiary">tenant terdaftar</span>
           </div>
           <div className="absolute bottom-0 left-0 w-full h-1 bg-[#137A48] opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
@@ -72,58 +69,52 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="font-headline-lg text-headline-lg text-[#172033]">315</span>
+            <span className="font-headline-lg text-headline-lg text-[#172033]">{totalPemasok}</span>
             <span className="font-body-sm text-body-sm text-tertiary">Mitra Pemasok</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-label-sm text-label-sm text-tertiary">
-              Bahan Baku: <strong className="text-on-surface">242</strong>
-            </span>
-            <span className="text-outline-variant">•</span>
-            <span className="font-label-sm text-label-sm text-tertiary">
-              Operasional: <strong className="text-on-surface">73</strong>
+            <span className="font-label-sm text-label-sm text-primary font-semibold">
+              Terverifikasi di database
             </span>
           </div>
           <div className="absolute bottom-0 left-0 w-full h-1 bg-[#137A48] opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
-        {/* KPI 3: Konsumen Terhubung */}
+        {/* KPI 3: Total Pengguna Platform */}
         <div className="bg-surface-container-lowest rounded-[22px] border border-outline-variant/35 p-5 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] hover:shadow-md transition-shadow relative overflow-hidden group">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-label-md text-label-md text-[#7B8794]">Konsumen Terhubung</span>
+            <span className="font-label-md text-label-md text-[#7B8794]">Total Akun Terdaftar</span>
             <div className="w-9 h-9 rounded-xl bg-[#E8F3EC] flex items-center justify-center text-[#137A48]">
               <span className="material-symbols-outlined text-[20px]">groups</span>
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="font-headline-lg text-headline-lg text-[#172033]">84.920</span>
-            <span className="font-body-sm text-body-sm text-tertiary">Pelanggan Aktif</span>
+            <span className="font-headline-lg text-headline-lg text-[#172033]">{totalUsers}</span>
+            <span className="font-body-sm text-body-sm text-tertiary">Pengguna Aktif</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-[#E8F3EC] text-[#137A48] font-bold">
-              <span className="material-symbols-outlined text-[13px] mr-0.5">trending_up</span> +14.8%
+              <span className="material-symbols-outlined text-[13px] mr-0.5">verified</span> Live DB
             </span>
-            <span className="font-body-sm text-body-sm text-tertiary">retensi bulanan POS</span>
           </div>
           <div className="absolute bottom-0 left-0 w-full h-1 bg-[#137A48] opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
-        {/* KPI 4: Total Transaksi Sistem */}
+        {/* KPI 4: Total Nilai Transaksi */}
         <div className="bg-surface-container-lowest rounded-[22px] border border-outline-variant/35 p-5 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] hover:shadow-md transition-shadow relative overflow-hidden group">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-label-md text-label-md text-[#7B8794]">Total Transaksi Sistem</span>
+            <span className="font-label-md text-label-md text-[#7B8794]">Gross Platform Revenue</span>
             <div className="w-9 h-9 rounded-xl bg-[#E8F3EC] flex items-center justify-center text-[#137A48]">
               <span className="material-symbols-outlined text-[20px]">payments</span>
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="font-headline-lg text-headline-lg text-[#172033]">Rp 2,4 M</span>
-            <span className="font-body-sm text-body-sm text-tertiary">Bulan Berjalan</span>
+            <span className="font-headline-lg text-headline-lg text-[#172033]">
+              Rp {Math.round(grossRev).toLocaleString("id-ID")}
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="font-label-sm text-label-sm text-primary font-semibold">
-              99.82% Sukses Kliring
+              Live Settlement
             </span>
-            <span className="text-outline-variant">•</span>
-            <span className="font-label-sm text-label-sm text-tertiary">14.309 PO</span>
           </div>
           <div className="absolute bottom-0 left-0 w-full h-1 bg-[#137A48] opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
@@ -392,17 +383,17 @@ export default function AdminDashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <div className="flex items-center gap-2">
                 <span className="font-label-lg text-label-lg text-[#172033]">
-                  Bot AI Sukses Rekapitulasi Checkout Keranjang Cepat
+                  Sinkronisasi Transaksi Web POS Berhasil
                 </span>
                 <span className="px-2 py-0.5 bg-secondary-container text-on-secondary-container rounded text-[11px] font-semibold">
-                  AI Engine BAPER v2.4
+                  POS Engine BAPER v2.4
                 </span>
               </div>
               <span className="font-body-sm text-body-sm text-tertiary">7 menit yang lalu</span>
             </div>
             <p className="font-body-md text-body-md text-tertiary mt-0.5">
-              Ekstraksi pesan WhatsApp pemesanan otomatis dari 14 merchant kopi berhasil dikonversi menjadi
-              pesanan draft split-vendor dengan akurasi 100%. Total nominal terkumpul: Rp 18.450.000.
+              Konsolidasi transaksi kasir POS otomatis dari 14 merchant kopi berhasil diproses menjadi
+              pesanan terekap split-vendor dengan akurasi 100%. Total nominal terkumpul: Rp 18.450.000.
             </p>
           </div>
           {/* Activity Log 3 */}

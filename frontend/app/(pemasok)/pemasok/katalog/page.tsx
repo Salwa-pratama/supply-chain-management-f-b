@@ -1,130 +1,85 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useMemo, useState } from "react";
 import PemasokTopbar from "@/components/pemasok/PemasokTopbar";
-
-export const metadata: Metadata = {
-  title: "Katalog Bahan & Barang | BAPER SCM",
-};
-
-const KATALOG_ITEMS = [
-  {
-    sku: "SKU-KOP-001",
-    name: "Arabika Specialty Gayo Grade 1",
-    category: "Biji Kopi",
-    packaging: "Alu-foil Valve Bag 1 Kg",
-    price: "Rp 175.000",
-    unit: "/ kg",
-    moq: "10 kg",
-    stock: 450,
-    minStock: 100,
-    status: "Tersedia",
-    leadTime: "1 Hari",
-    icon: "coffee",
-  },
-  {
-    sku: "SKU-KOP-002",
-    name: "Robusta Dampit Fine Grade",
-    category: "Biji Kopi",
-    packaging: "Alu-foil Valve Bag 1 Kg",
-    price: "Rp 85.000",
-    unit: "/ kg",
-    moq: "20 kg",
-    stock: 620,
-    minStock: 150,
-    status: "Tersedia",
-    leadTime: "1 Hari",
-    icon: "coffee",
-  },
-  {
-    sku: "SKU-DAI-001",
-    name: "Fresh Milk Pasteurisasi Homogen",
-    category: "Dairy & Susu",
-    packaging: "Chilled Carton 1 Liter",
-    price: "Rp 24.500",
-    unit: "/ liter",
-    moq: "24 liter",
-    stock: 380,
-    minStock: 200,
-    status: "Tersedia",
-    leadTime: "Same Day",
-    icon: "water_full",
-  },
-  {
-    sku: "SKU-DAI-002",
-    name: "Oat Milk Barista Edition",
-    category: "Dairy & Susu",
-    packaging: "Tetra Brik 1 Liter",
-    price: "Rp 42.000",
-    unit: "/ liter",
-    moq: "12 liter",
-    stock: 85,
-    minStock: 100,
-    status: "Menipis",
-    leadTime: "1-2 Hari",
-    icon: "water_full",
-  },
-  {
-    sku: "SKU-SYR-001",
-    name: "Sirup Gula Aren Organik Cair",
-    category: "Sirup & Pemanis",
-    packaging: "Jeriken Food Grade 5 Liter",
-    price: "Rp 135.000",
-    unit: "/ jeriken",
-    moq: "2 jeriken",
-    stock: 140,
-    minStock: 50,
-    status: "Tersedia",
-    leadTime: "1 Hari",
-    icon: "liquor",
-  },
-  {
-    sku: "SKU-SYR-002",
-    name: "Vanilla Artisan Flavor Syrup",
-    category: "Sirup & Pemanis",
-    packaging: "Botol Kaca 750 ml",
-    price: "Rp 88.000",
-    unit: "/ botol",
-    moq: "6 botol",
-    stock: 210,
-    minStock: 40,
-    status: "Tersedia",
-    leadTime: "1 Hari",
-    icon: "liquor",
-  },
-  {
-    sku: "SKU-TEA-001",
-    name: "Matcha Uji Ceremonial Powder",
-    category: "Bubuk Minuman",
-    packaging: "Tins Pouch 500 gr",
-    price: "Rp 260.000",
-    unit: "/ pouch",
-    moq: "4 pouch",
-    stock: 24,
-    minStock: 30,
-    status: "Menipis",
-    leadTime: "2-3 Hari",
-    icon: "nest_cam_floodlight",
-  },
-  {
-    sku: "SKU-PKG-001",
-    name: "Paper Cup Hot 8oz Double Wall",
-    category: "Kemasan & Packaging",
-    packaging: "Karton Isi 1.000 Pcs",
-    price: "Rp 420.000",
-    unit: "/ karton",
-    moq: "1 karton",
-    stock: 0,
-    minStock: 20,
-    status: "Habis",
-    leadTime: "Pre-Order 3H",
-    icon: "inventory",
-  },
-];
+import { useMySupplierCatalog, useCreateSupplierItem } from "@/features/suppliers/hooks/use-suppliers";
 
 export default function PemasokKatalogPage() {
+  const { data: catalog = [], isLoading } = useMySupplierCatalog();
+  const createItemMutation = useCreateSupplierItem();
+
+  const [search, setSearch] = useState("");
+  const [selectedCat, setSelectedCat] = useState("all");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Form states
+  const [name, setName] = useState("");
+  const [unit, setUnit] = useState("kg");
+  const [price, setPrice] = useState("");
+  const [stock, setStock] = useState("100");
+  const [minOrder, setMinOrder] = useState("5");
+  const [leadTimeDays, setLeadTimeDays] = useState("1");
+  const [category, setCategory] = useState("Bahan Baku");
+
+  const filteredItems = useMemo(() => {
+    return catalog.filter((item) => {
+      const matchSearch =
+        !search.trim() ||
+        item.name.toLowerCase().includes(search.toLowerCase()) ||
+        (item.category || "").toLowerCase().includes(search.toLowerCase());
+      const matchCat =
+        selectedCat === "all" || (item.category || "").toLowerCase() === selectedCat.toLowerCase();
+      return matchSearch && matchCat;
+    });
+  }, [catalog, search, selectedCat]);
+
+  const totalSku = catalog.length;
+  const stockAman = catalog.filter((i) => Number(i.stock) > 20).length;
+  const stockMenipis = catalog.filter((i) => Number(i.stock) > 0 && Number(i.stock) <= 20).length;
+  const stockHabis = catalog.filter((i) => Number(i.stock) <= 0).length;
+
+  function handleCreateItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !price) return;
+
+    createItemMutation.mutate(
+      {
+        name,
+        unit,
+        price: Number(price),
+        stock: Number(stock) || 0,
+        minOrder: Number(minOrder) || 1,
+        leadTimeDays: Number(leadTimeDays) || 1,
+        category,
+      },
+      {
+        onSuccess: () => {
+          setModalOpen(false);
+          setName("");
+          setPrice("");
+          setStock("100");
+          setToast("Komoditas berhasil ditambahkan ke katalog resmi!");
+          setTimeout(() => setToast(null), 4000);
+        },
+        onError: (err) => {
+          alert(`Gagal menambah komoditas: ${err.message}`);
+        },
+      }
+    );
+  }
+
   return (
     <>
       <PemasokTopbar />
       <main className="flex-1 p-8 max-w-[1440px] w-full mx-auto space-y-8">
+        {toast && (
+          <div className="fixed top-5 right-5 z-50 bg-[#137A48] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-sm font-semibold animate-fade-in">
+            <span className="material-symbols-outlined text-[20px]">check_circle</span>
+            <span>{toast}</span>
+          </div>
+        )}
+
         {/* HEADER & QUICK ACTIONS */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
           <div>
@@ -133,26 +88,22 @@ export default function PemasokKatalogPage() {
                 Manajemen Komoditas B2B
               </span>
               <span className="text-tertiary text-xs">•</span>
-              <span className="text-body-sm text-tertiary font-body-sm">Total 24 Bahan Terdaftar</span>
+              <span className="text-body-sm text-tertiary font-body-sm">
+                Total {totalSku} Komoditas Aktif
+              </span>
             </div>
             <h1 className="text-headline-lg font-headline-lg text-[#172033]">
               Katalog Bahan Baku &amp; Barang Pasokan
             </h1>
             <p className="text-body-md font-body-md text-tertiary mt-1">
-              Atur harga kontrak B2B, batas minimal pemesanan (MOQ), dan pantau jumlah ketersediaan stok fisik gudang.
+              Atur harga kontrak B2B, batas minimal pemesanan (MOQ), dan pantau jumlah ketersediaan stok fisik gudang pasokan.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              className="h-11 px-4 rounded-xl border border-[#94B9A9] bg-white text-[#172033] hover:bg-[#E8F3EC] font-label-lg text-label-lg flex items-center gap-2 transition-all"
-            >
-              <span className="material-symbols-outlined text-[18px]">file_download</span>
-              <span>Unduh Daftar Harga (PDF/Excel)</span>
-            </button>
-            <button
-              type="button"
+              onClick={() => setModalOpen(true)}
               className="h-11 px-5 rounded-xl bg-primary text-white hover:bg-[#0D6038] font-label-lg text-label-lg flex items-center gap-2 shadow-sm transition-all active:scale-[0.98]"
             >
               <span className="material-symbols-outlined text-[18px]">add_circle</span>
@@ -166,37 +117,37 @@ export default function PemasokKatalogPage() {
           <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
             <span className="text-label-md font-label-md text-tertiary">Total SKU Aktif</span>
             <div className="mt-2 text-headline-lg font-headline-lg text-[#172033]">
-              24 <span className="text-sm font-normal text-tertiary">Komoditas</span>
+              {totalSku} <span className="text-sm font-normal text-tertiary">Komoditas</span>
             </div>
             <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-              6 Kategori Bahan F&B
+              Tersinkron Database
             </span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
             <span className="text-label-md font-label-md text-tertiary">Stok Aman (Tersedia)</span>
             <div className="mt-2 text-headline-lg font-headline-lg text-primary">
-              21 <span className="text-sm font-normal text-tertiary">Item</span>
+              {stockAman} <span className="text-sm font-normal text-tertiary">Item</span>
             </div>
             <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-              Siap Kirim Same-Day
+              Siap Kirim
             </span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-            <span className="text-label-md font-label-md text-tertiary">Stok Menipis (Buffer Low)</span>
+            <span className="text-label-md font-label-md text-tertiary">Stok Menipis</span>
             <div className="mt-2 text-headline-lg font-headline-lg text-[#B7791F]">
-              2 <span className="text-sm font-normal text-tertiary">Item</span>
+              {stockMenipis} <span className="text-sm font-normal text-tertiary">Item</span>
             </div>
             <span className="inline-block mt-2 text-[11px] font-semibold text-[#B7791F] bg-[#FFF9E6] px-2 py-0.5 rounded-full border border-[#B7791F]/20">
-              Perlu Restock Pabrik
+              Perlu Produksi
             </span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-            <span className="text-label-md font-label-md text-tertiary">Stok Habis / Out of Stock</span>
+            <span className="text-label-md font-label-md text-tertiary">Stok Habis</span>
             <div className="mt-2 text-headline-lg font-headline-lg text-[#B54747]">
-              1 <span className="text-sm font-normal text-tertiary">Item</span>
+              {stockHabis} <span className="text-sm font-normal text-tertiary">Item</span>
             </div>
             <span className="inline-block mt-2 text-[11px] font-semibold text-[#B54747] bg-[#FDF2F2] px-2 py-0.5 rounded-full border border-[#B54747]/30">
               Status Pre-Order
@@ -204,229 +155,263 @@ export default function PemasokKatalogPage() {
           </div>
         </div>
 
-        {/* SEARCH, CATEGORY PILLS & FILTERS */}
-        <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-tertiary">
-                search
-              </span>
-              <input
-                type="text"
-                placeholder="Cari SKU, nama komoditas, atau kemasan..."
-                className="w-full h-11 pl-10 pr-4 text-body-sm font-body-sm bg-[#F5F8F6] border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-[#7B8794]"
-              />
-            </div>
-
-            {/* Filter Dropdowns */}
-            <div className="flex flex-wrap items-center gap-3">
-              <select className="h-11 px-3.5 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] text-on-surface text-body-sm focus:outline-none focus:border-primary">
-                <option value="">Semua Kategori</option>
-                <option value="kopi">Biji Kopi</option>
-                <option value="dairy">Dairy &amp; Susu</option>
-                <option value="sirup">Sirup &amp; Pemanis</option>
-                <option value="powder">Bubuk Minuman</option>
-                <option value="pkg">Kemasan Food Grade</option>
-              </select>
-
-              <select className="h-11 px-3.5 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] text-on-surface text-body-sm focus:outline-none focus:border-primary">
-                <option value="">Semua Status Stok</option>
-                <option value="tersedia">Tersedia (Aman)</option>
-                <option value="menipis">Stok Menipis</option>
-                <option value="habis">Habis</option>
-              </select>
-
-              <button
-                type="button"
-                className="h-11 px-3.5 rounded-xl border border-outline-variant/50 hover:bg-[#F5F8F6] text-on-surface text-body-sm flex items-center gap-1.5 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">tune</span>
-                <span>Filter Lanjutan</span>
-              </button>
-            </div>
+        {/* SEARCH & FILTERS */}
+        <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-md">
+            <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-tertiary">
+              search
+            </span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari nama komoditas atau kategori..."
+              className="w-full h-11 pl-10 pr-4 text-body-sm font-body-sm bg-[#F5F8F6] border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary transition-all placeholder:text-[#7B8794]"
+            />
           </div>
 
-          {/* Category Quick Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-            {["Semua Komoditas (24)", "Biji Kopi (8)", "Dairy & Susu (5)", "Sirup & Puree (6)", "Bubuk Minuman (3)", "Kemasan & Packaging (2)"].map(
-              (tab, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className={`px-3.5 py-1.5 rounded-xl whitespace-nowrap font-medium transition-all ${
-                    idx === 0
-                      ? "bg-primary text-white font-bold shadow-sm"
-                      : "bg-[#F5F8F6] text-tertiary hover:text-on-surface hover:bg-[#E8F3EC]"
-                  }`}
-                >
-                  {tab}
-                </button>
-              )
-            )}
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={selectedCat}
+              onChange={(e) => setSelectedCat(e.target.value)}
+              className="h-11 px-3.5 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] text-on-surface text-body-sm focus:outline-none focus:border-primary"
+            >
+              <option value="all">Semua Kategori</option>
+              <option value="biji kopi">Biji Kopi</option>
+              <option value="dairy & susu">Dairy &amp; Susu</option>
+              <option value="sirup & pemanis">Sirup &amp; Pemanis</option>
+              <option value="kemasan & packaging">Kemasan Food Grade</option>
+            </select>
           </div>
         </div>
 
-        {/* KATALOG TABLE */}
+        {/* TABLE */}
         <div className="bg-white rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#F9F9FF] border-b border-outline-variant/30 text-xs font-bold text-tertiary uppercase tracking-wider">
-                  <th className="py-4 px-5">Komoditas &amp; SKU</th>
-                  <th className="py-4 px-4">Kategori</th>
-                  <th className="py-4 px-4">Kemasan Standar</th>
-                  <th className="py-4 px-4">Harga Grosir (B2B)</th>
-                  <th className="py-4 px-4">Min. Order (MOQ)</th>
-                  <th className="py-4 px-4">Stok Gudang</th>
-                  <th className="py-4 px-4">Lead Time</th>
-                  <th className="py-4 px-4">Status</th>
-                  <th className="py-4 px-5 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/20 text-body-sm">
-                {KATALOG_ITEMS.map((item) => (
-                  <tr key={item.sku} className="hover:bg-[#F5F8F6]/60 transition-colors">
-                    {/* Komoditas & SKU */}
-                    <td className="py-4 px-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] text-primary flex items-center justify-center shrink-0 border border-primary/20">
-                          <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-                        </div>
-                        <div>
-                          <div className="font-bold text-[#172033] hover:text-primary cursor-pointer transition-colors">
-                            {item.name}
-                          </div>
-                          <span className="text-xs font-mono text-tertiary">{item.sku}</span>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Kategori */}
-                    <td className="py-4 px-4 text-tertiary font-medium">{item.category}</td>
-
-                    {/* Kemasan */}
-                    <td className="py-4 px-4 text-on-surface">{item.packaging}</td>
-
-                    {/* Harga */}
-                    <td className="py-4 px-4">
-                      <span className="font-bold text-[#172033]">{item.price}</span>
-                      <span className="text-xs text-tertiary font-normal"> {item.unit}</span>
-                    </td>
-
-                    {/* MOQ */}
-                    <td className="py-4 px-4 font-medium text-on-surface">{item.moq}</td>
-
-                    {/* Stok Gudang */}
-                    <td className="py-4 px-4">
-                      <div className="font-bold text-[#172033]">{item.stock} unit</div>
-                      <div className="w-24 bg-[#E9EDFF] h-1.5 rounded-full mt-1 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${
-                            item.stock === 0
-                              ? "bg-error"
-                              : item.stock < item.minStock
-                              ? "bg-[#B7791F]"
-                              : "bg-primary"
-                          }`}
-                          style={{
-                            width: `${Math.min(100, (item.stock / (item.minStock * 2)) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                    </td>
-
-                    {/* Lead Time */}
-                    <td className="py-4 px-4 text-tertiary font-medium">{item.leadTime}</td>
-
-                    {/* Status */}
-                    <td className="py-4 px-4">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
-                          item.status === "Tersedia"
-                            ? "bg-[#E8F3EC] text-primary border border-primary/20"
-                            : item.status === "Menipis"
-                            ? "bg-[#FFF9E6] text-[#B7791F] border border-[#B7791F]/30"
-                            : "bg-[#FDF2F2] text-error border border-error/30"
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            item.status === "Tersedia"
-                              ? "bg-primary"
-                              : item.status === "Menipis"
-                              ? "bg-[#B7791F]"
-                              : "bg-error"
-                          }`}
-                        />
-                        {item.status}
-                      </span>
-                    </td>
-
-                    {/* Aksi */}
-                    <td className="py-4 px-5 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          className="w-8 h-8 rounded-lg hover:bg-[#E8F3EC] text-tertiary hover:text-primary flex items-center justify-center transition-colors"
-                          title="Edit Produk & Harga"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="w-8 h-8 rounded-lg hover:bg-[#E8F3EC] text-tertiary hover:text-primary flex items-center justify-center transition-colors"
-                          title="Perbarui Stok Fisik"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">inventory</span>
-                        </button>
-                      </div>
-                    </td>
+          {isLoading ? (
+            <div className="p-12 text-center text-tertiary">Memuat katalog pemasok...</div>
+          ) : filteredItems.length === 0 ? (
+            <div className="p-12 text-center text-tertiary">Belum ada komoditas di katalog.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#F9F9FF] border-b border-outline-variant/30 text-xs font-bold text-tertiary uppercase tracking-wider">
+                    <th className="py-4 px-5">Nama Komoditas</th>
+                    <th className="py-4 px-4">Kategori</th>
+                    <th className="py-4 px-4">Harga Kontrak B2B</th>
+                    <th className="py-4 px-4">Stok Tersedia</th>
+                    <th className="py-4 px-4">Minimal Order (MOQ)</th>
+                    <th className="py-4 px-4">Lead Time</th>
+                    <th className="py-4 px-5 text-right">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/20 text-body-sm">
+                  {filteredItems.map((item, idx) => {
+                    const st = Number(item.stock);
+                    const isSafe = st > 20;
+                    const isLow = st > 0 && st <= 20;
 
-          {/* PAGINATION */}
-          <div className="p-4 bg-[#F9F9FF] border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-tertiary">
-            <span>Menampilkan 1 - 8 dari total 24 item katalog komoditas</span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                className="px-3 py-1.5 rounded-lg border border-outline-variant/40 bg-white text-tertiary hover:bg-[#F5F8F6] disabled:opacity-50"
-                disabled
-              >
-                Sebelumnya
-              </button>
-              <button
-                type="button"
-                className="w-8 h-8 rounded-lg bg-primary text-white font-bold flex items-center justify-center shadow-sm"
-              >
-                1
-              </button>
-              <button
-                type="button"
-                className="w-8 h-8 rounded-lg bg-white border border-outline-variant/40 text-on-surface hover:bg-[#F5F8F6] flex items-center justify-center font-medium"
-              >
-                2
-              </button>
-              <button
-                type="button"
-                className="w-8 h-8 rounded-lg bg-white border border-outline-variant/40 text-on-surface hover:bg-[#F5F8F6] flex items-center justify-center font-medium"
-              >
-                3
-              </button>
-              <button
-                type="button"
-                className="px-3 py-1.5 rounded-lg border border-outline-variant/40 bg-white text-on-surface hover:bg-[#F5F8F6]"
-              >
-                Selanjutnya
-              </button>
+                    return (
+                      <tr key={item.id} className="hover:bg-[#F5F8F6]/60 transition-colors">
+                        <td className="py-4 px-5">
+                          <div className="font-bold text-[#172033]">{item.name}</div>
+                          <span className="text-[11px] font-mono font-bold text-primary">
+                            SKU-SUP-{String(idx + 1).padStart(3, "0")}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-4 text-tertiary capitalize">
+                          {item.category || "Bahan Baku"}
+                        </td>
+
+                        <td className="py-4 px-4 font-mono font-bold text-primary">
+                          Rp {Number(item.price).toLocaleString("id-ID")}{" "}
+                          <span className="text-xs text-tertiary font-normal">/ {item.unit}</span>
+                        </td>
+
+                        <td className="py-4 px-4 font-mono font-bold text-[#172033]">
+                          {st.toLocaleString("id-ID")} {item.unit}
+                        </td>
+
+                        <td className="py-4 px-4 text-tertiary font-mono">
+                          {item.minOrder ? `${item.minOrder} ${item.unit}` : `1 ${item.unit}`}
+                        </td>
+
+                        <td className="py-4 px-4 text-tertiary">
+                          {item.leadTimeDays ? `${item.leadTimeDays} Hari` : "1 Hari"}
+                        </td>
+
+                        <td className="py-4 px-5 text-right">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                              isSafe
+                                ? "bg-[#E8F3EC] text-primary"
+                                : isLow
+                                ? "bg-[#FFF9E6] text-[#B7791F]"
+                                : "bg-[#FDF2F2] text-error"
+                            }`}
+                          >
+                            {isSafe ? "Tersedia" : isLow ? "Menipis" : "Habis"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </div>
+          )}
         </div>
       </main>
+
+      {/* Modal Tambah Komoditas */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 bg-[#172033]/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-outline-variant/60 shadow-2xl overflow-hidden p-6">
+            <div className="flex items-center justify-between pb-4 border-b border-outline-variant/30">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] text-primary flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[22px]">add_box</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-on-surface text-lg">Tambah Komoditas Baru</h3>
+                  <p className="text-xs text-tertiary">Daftarkan bahan baku ke katalog resmi pemasok</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="w-8 h-8 rounded-full hover:bg-surface-container flex items-center justify-center text-tertiary"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateItem} className="mt-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-tertiary uppercase mb-1">
+                  Nama Komoditas / Bahan
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Contoh: Biji Kopi Arabika Lintong"
+                  className="w-full text-sm p-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-tertiary uppercase mb-1">
+                    Kategori
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full text-sm p-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] focus:outline-none focus:border-primary"
+                  >
+                    <option value="Biji Kopi">Biji Kopi</option>
+                    <option value="Dairy & Susu">Dairy &amp; Susu</option>
+                    <option value="Sirup & Pemanis">Sirup &amp; Pemanis</option>
+                    <option value="Kemasan & Packaging">Kemasan &amp; Packaging</option>
+                    <option value="Bahan Baku">Bahan Baku Lainnya</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-tertiary uppercase mb-1">
+                    Satuan (Unit)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                    placeholder="kg, liter, jeriken, dus..."
+                    className="w-full text-sm p-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-tertiary uppercase mb-1">
+                    Harga Kontrak B2B (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="185000"
+                    className="w-full text-sm p-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] focus:outline-none focus:border-primary font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-tertiary uppercase mb-1">
+                    Stok Tersedia
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={stock}
+                    onChange={(e) => setStock(e.target.value)}
+                    className="w-full text-sm p-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] focus:outline-none focus:border-primary font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-tertiary uppercase mb-1">
+                    Minimal Order (MOQ)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={minOrder}
+                    onChange={(e) => setMinOrder(e.target.value)}
+                    className="w-full text-sm p-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] focus:outline-none focus:border-primary font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-tertiary uppercase mb-1">
+                    Lead Time (Hari)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={leadTimeDays}
+                    onChange={(e) => setLeadTimeDays(e.target.value)}
+                    className="w-full text-sm p-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] focus:outline-none focus:border-primary font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-outline-variant text-sm font-semibold text-tertiary hover:bg-surface-container"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={createItemMutation.isPending}
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:bg-[#0D6038] text-white text-sm font-bold shadow-sm transition-all"
+                >
+                  {createItemMutation.isPending ? "Menyimpan..." : "Simpan ke Katalog"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

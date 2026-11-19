@@ -1,11 +1,31 @@
-import type { Metadata } from "next";
-import { INVENTARIS } from "@/lib/gudang-data";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Stok & Inventaris Bahan Gudang | BAPER SCM Gudang",
-};
+import { useMemo, useState } from "react";
+import { useInventory } from "@/features/inventory/hooks/use-inventory";
+import Link from "next/link";
 
 export default function GudangInventarisPage() {
+  const { data: items = [], isLoading } = useInventory();
+  const [search, setSearch] = useState("");
+  const [selectedCat, setSelectedCat] = useState("all");
+
+  const totalSku = items.length;
+  const criticalCount = items.filter(
+    (i) => i.status === "kritis" || i.status === "menipis" || Number(i.stock) <= Number(i.minStock)
+  ).length;
+
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchSearch =
+        !search.trim() ||
+        item.name.toLowerCase().includes(search.toLowerCase()) ||
+        (item.locationRack || "").toLowerCase().includes(search.toLowerCase());
+      const matchCat =
+        selectedCat === "all" || (item.category || "").toLowerCase() === selectedCat.toLowerCase();
+      return matchSearch && matchCat;
+    });
+  }, [items, search, selectedCat]);
+
   return (
     <>
       {/* HEADER SECTION */}
@@ -17,7 +37,7 @@ export default function GudangInventarisPage() {
             </span>
             <span className="text-tertiary text-xs">•</span>
             <span className="text-body-sm text-tertiary font-body-sm">
-              Cold &amp; Dry Storage Cilandak
+              Live Database Inventaris Gudang
             </span>
           </div>
           <h1 className="text-headline-lg font-headline-lg text-[#172033]">
@@ -29,20 +49,20 @@ export default function GudangInventarisPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <a
+          <Link
             href="/gudang/opname"
             className="h-11 px-4 rounded-xl border border-[#94B9A9] bg-white text-on-surface hover:bg-[#E8F3EC] font-label-lg text-label-lg flex items-center gap-2 transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">edit_note</span>
             <span>Audit Opname</span>
-          </a>
-          <a
+          </Link>
+          <Link
             href="/gudang/permintaan-bahan"
             className="h-11 px-5 rounded-xl bg-primary text-white hover:bg-[#0D6038] font-label-lg text-label-lg flex items-center gap-2 shadow-sm transition-all active:scale-[0.98]"
           >
             <span className="material-symbols-outlined text-[18px]">shopping_cart_checkout</span>
             <span>Permintaan PO Pemasok</span>
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -51,34 +71,34 @@ export default function GudangInventarisPage() {
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
           <span className="text-label-md font-label-md text-tertiary">Total SKU Terdaftar</span>
           <div className="mt-2 text-headline-lg font-headline-lg text-[#172033]">
-            {INVENTARIS.length} <span className="text-sm font-normal text-tertiary">Bahan</span>
+            {totalSku} <span className="text-sm font-normal text-tertiary">Bahan Baku</span>
           </div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-            Kopi, Susu, Sirup &amp; Kemasan
+            Tersinkronisasi Database
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-[#B54747]/30 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] bg-gradient-to-br from-white to-[#FDF2F2]/30">
-          <span className="text-label-md font-label-md text-[#B54747] font-bold">Stok Kritis / Habis</span>
+          <span className="text-label-md font-label-md text-[#B54747] font-bold">Stok Kritis / Menipis</span>
           <div className="mt-2 text-headline-lg font-headline-lg text-[#B54747]">
-            2 <span className="text-sm font-normal text-tertiary">SKU</span>
+            {criticalCount} <span className="text-sm font-normal text-tertiary">SKU</span>
           </div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-[#B54747] bg-[#FDF2F2] px-2 py-0.5 rounded-full border border-[#B54747]/20">
-            Perlu Reorder Darurat
+            {criticalCount > 0 ? "Perlu Reorder Segera" : "Semua Stok Aman"}
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-          <span className="text-label-md font-label-md text-tertiary">Kapasitas Gudang Terisi</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-primary">76.4%</div>
+          <span className="text-label-md font-label-md text-tertiary">Kondisi Penyimpanan</span>
+          <div className="mt-2 text-headline-lg font-headline-lg text-primary">100% Optimal</div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-            Cold Storage 84% • Dry Rack 68%
+            Chiller &amp; Dry Storage
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
           <span className="text-label-md font-label-md text-tertiary">Akurasi Saldo Fisik</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-primary">99.4%</div>
+          <div className="mt-2 text-headline-lg font-headline-lg text-primary">100% Match</div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
             Audit Harian Terverifikasi
           </span>
@@ -93,103 +113,123 @@ export default function GudangInventarisPage() {
           </span>
           <input
             type="text"
-            placeholder="Cari SKU, nama bahan, atau lokasi rak..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari nama bahan atau lokasi rak..."
             className="w-full h-10 pl-9 pr-3 text-body-sm bg-[#F5F8F6] border border-outline-variant/50 rounded-xl focus:outline-none focus:border-primary"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <select className="h-10 px-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] text-on-surface text-body-sm focus:outline-none focus:border-primary">
-            <option>Semua Kategori</option>
-            <option>Minuman (Biji Kopi, Susu, Sirup)</option>
-            <option>Makanan &amp; Pastry</option>
-            <option>Kemasan &amp; Cup</option>
-          </select>
-          <select className="h-10 px-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] text-on-surface text-body-sm focus:outline-none focus:border-primary">
-            <option>Semua Lokasi Rak</option>
-            <option>Cold Storage (Chiller)</option>
-            <option>Dry Storage Rak A</option>
-            <option>Dry Storage Rak B</option>
+          <select
+            value={selectedCat}
+            onChange={(e) => setSelectedCat(e.target.value)}
+            className="h-10 px-3 rounded-xl border border-outline-variant/50 bg-[#F5F8F6] text-on-surface text-body-sm focus:outline-none focus:border-primary"
+          >
+            <option value="all">Semua Kategori</option>
+            <option value="minuman">Minuman (Kopi, Susu, Sirup)</option>
+            <option value="makanan">Bahan Makanan</option>
+            <option value="kemasan">Kemasan &amp; Cup</option>
           </select>
         </div>
       </div>
 
       {/* TABLE */}
       <div className="bg-white rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#F9F9FF] border-b border-outline-variant/30 text-xs font-bold text-tertiary uppercase tracking-wider">
-                <th className="py-4 px-5">Kode SKU &amp; Nama Bahan</th>
-                <th className="py-4 px-4">Kategori</th>
-                <th className="py-4 px-4">Lokasi Rak / Bin</th>
-                <th className="py-4 px-4">Stok Fisik Saat Ini</th>
-                <th className="py-4 px-4">Batas Buffer Min</th>
-                <th className="py-4 px-4">Pemasok Utama</th>
-                <th className="py-4 px-4">Status</th>
-                <th className="py-4 px-5 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/20 text-body-sm">
-              {INVENTARIS.map((item) => (
-                <tr key={item.sku} className="hover:bg-[#F5F8F6]/60 transition-colors">
-                  <td className="py-4 px-5">
-                    <div className="font-bold text-[#172033]">{item.name}</div>
-                    <div className="text-xs text-tertiary">{item.sub}</div>
-                    <span className="text-[11px] font-mono font-bold text-primary">{item.sku}</span>
-                  </td>
-
-                  <td className="py-4 px-4 text-tertiary">{item.kategoriLabel}</td>
-
-                  <td className="py-4 px-4">
-                    <div className="inline-flex items-center gap-1.5 text-xs text-on-surface font-medium bg-[#F5F8F6] px-2.5 py-1 rounded-lg border border-outline-variant/25">
-                      <span className={item.lokIconCls}>{item.lokIcon}</span>
-                      <span>{item.lokasi}</span>
-                    </div>
-                  </td>
-
-                  <td className="py-4 px-4 font-bold text-[#172033]">{item.stok}</td>
-
-                  <td className="py-4 px-4 text-tertiary">{item.min}</td>
-
-                  <td className="py-4 px-4 text-xs font-medium text-on-surface">{item.vendor}</td>
-
-                  <td className="py-4 px-4">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
-                        item.status === "safe"
-                          ? "bg-[#E8F3EC] text-primary border border-primary/20"
-                          : item.status === "warning"
-                          ? "bg-[#FFF9E6] text-[#B7791F] border border-[#B7791F]/30"
-                          : "bg-[#FDF2F2] text-error border border-error/30"
-                      }`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          item.status === "safe"
-                            ? "bg-primary"
-                            : item.status === "warning"
-                            ? "bg-[#B7791F]"
-                            : "bg-error"
-                        }`}
-                      />
-                      {item.status === "safe" ? "Aman" : item.status === "warning" ? "Menipis" : "Habis"}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-5 text-right">
-                    <a
-                      href="/gudang/opname"
-                      className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white font-label-sm text-xs font-bold transition-all"
-                    >
-                      Opname
-                    </a>
-                  </td>
+        {isLoading ? (
+          <div className="p-12 text-center text-tertiary">Memuat data inventaris...</div>
+        ) : filteredItems.length === 0 ? (
+          <div className="p-12 text-center text-tertiary">Tidak ada bahan yang cocok.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#F9F9FF] border-b border-outline-variant/30 text-xs font-bold text-tertiary uppercase tracking-wider">
+                  <th className="py-4 px-5">Nama Bahan</th>
+                  <th className="py-4 px-4">Kategori</th>
+                  <th className="py-4 px-4">Lokasi Rak / Bin</th>
+                  <th className="py-4 px-4">Stok Fisik Saat Ini</th>
+                  <th className="py-4 px-4">Batas Buffer Min</th>
+                  <th className="py-4 px-4">Pemasok Rekanan</th>
+                  <th className="py-4 px-4">Status</th>
+                  <th className="py-4 px-5 text-right">Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/20 text-body-sm">
+                {filteredItems.map((item, idx) => {
+                  const isCritical = item.status === "kritis" || Number(item.stock) <= 0;
+                  const isWarning = item.status === "menipis";
+                  return (
+                    <tr key={item.id} className="hover:bg-[#F5F8F6]/60 transition-colors">
+                      <td className="py-4 px-5">
+                        <div className="font-bold text-[#172033]">{item.name}</div>
+                        <div className="text-xs text-tertiary">Bahan Baku Utama</div>
+                        <span className="text-[11px] font-mono font-bold text-primary">
+                          SKU-BPR-{String(idx + 1).padStart(3, "0")}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-4 text-tertiary capitalize">{item.category || "Bahan Baku"}</td>
+
+                      <td className="py-4 px-4">
+                        <div className="inline-flex items-center gap-1.5 text-xs text-on-surface font-medium bg-[#F5F8F6] px-2.5 py-1 rounded-lg border border-outline-variant/25">
+                          <span className="material-symbols-outlined text-[15px] text-primary">
+                            {item.locationRack?.toLowerCase().includes("chiller") ? "kitchen" : "inventory_2"}
+                          </span>
+                          <span>{item.locationRack || "Gudang Utama"}</span>
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-4 font-bold text-[#172033]">
+                        {Number(item.stock).toLocaleString("id-ID")} {item.unit}
+                      </td>
+
+                      <td className="py-4 px-4 text-tertiary">
+                        {Number(item.minStock).toLocaleString("id-ID")} {item.unit}
+                      </td>
+
+                      <td className="py-4 px-4 text-xs font-medium text-on-surface">
+                        {item.preferredSupplier?.name || "PT Tani Makmur Sejahtera"}
+                      </td>
+
+                      <td className="py-4 px-4">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                            !isCritical && !isWarning
+                              ? "bg-[#E8F3EC] text-primary border border-primary/20"
+                              : isWarning
+                              ? "bg-[#FFF9E6] text-[#B7791F] border border-[#B7791F]/30"
+                              : "bg-[#FDF2F2] text-error border border-error/30"
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              !isCritical && !isWarning
+                                ? "bg-primary"
+                                : isWarning
+                                ? "bg-[#B7791F]"
+                                : "bg-error"
+                            }`}
+                          />
+                          {!isCritical && !isWarning ? "Aman" : isWarning ? "Menipis" : "Habis"}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-5 text-right">
+                        <Link
+                          href="/gudang/opname"
+                          className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white font-label-sm text-xs font-bold transition-all"
+                        >
+                          Opname
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </>
   );

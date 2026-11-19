@@ -71,4 +71,12 @@ export class SuppliersService {
       },
     });
   }
+
+  async getMyCatalog(userId: string) {
+    const supplier = await this.getMySupplierProfile(userId);
+    return this.prisma.supplierItem.findMany({
+      where: { supplierId: supplier.id },
+      orderBy: { name: "asc" },
+    });
+  }
 }

@@ -61,7 +61,6 @@ model Business {
   // Relations
   owner             User               @relation(fields: [userId], references: [id], onDelete: Restrict)
   members           BusinessMember[]
-  bot               Bot?
   customers         Customer[]
   products          Product[]
   orders            Order[]
@@ -91,76 +90,23 @@ model BusinessMember {
 }
 
 // ==========================================
-// 2. Bot & Chat (Conversational Commerce)
+// 2. Pelanggan & Konsumen (Web CRM / POS)
 // ==========================================
 
-model Bot {
-  id          String   @id @default(uuid())
-  businessId  String   @unique @map("business_id")
-  name        String
-  waNumber    String?  @map("wa_number")
-  waStatus    String?  @default("disconnected") @map("wa_status")
-  agentPrompt String?  @map("agent_prompt") @db.Text
-  agentApi    String?  @map("agent_api")
-  isActive    Boolean  @default(true) @map("is_active")
-
-  // Relations
-  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  chatSessions ChatSession[]
-
-  @@map("bots")
-}
-
 model Customer {
-  id            String   @id @default(uuid())
-  businessId    String   @map("business_id")
-  waPhoneNumber String   @map("wa_phone_number")
-  name          String
-  address       String?  @db.Text
-  isBlocked     Boolean  @default(false) @map("is_blocked")
-
-  // Relations
-  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  chatSessions ChatSession[]
-  orders       Order[]
-
-  @@unique([businessId, waPhoneNumber])
-  @@map("customers")
-}
-
-model ChatSession {
-  id         String    @id @default(uuid())
-  botId      String    @map("bot_id")
-  customerId String    @map("customer_id")
-  startedAt  DateTime  @default(now()) @map("started_at")
-  endedAt    DateTime? @map("ended_at")
-  status     String    @default("active") // active, ended, transferred
-
-  // Relations
-  bot      Bot       @relation(fields: [botId], references: [id], onDelete: Cascade)
-  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  messages Message[]
-  order    Order?
-
-  @@index([botId])
-  @@index([customerId])
-  @@map("chat_sessions")
-}
-
-model Message {
   id         String   @id @default(uuid())
-  sessionId  String   @map("session_id")
-  senderType String   @map("sender_type") // bot, customer, agent
-  content    String   @db.Text
-  metadata   Json?
-  isRead     Boolean  @default(false) @map("is_read")
-  createdAt  DateTime @default(now()) @map("created_at")
+  businessId String   @map("business_id")
+  phone      String?  @map("phone")
+  name       String
+  address    String?  @db.Text
+  isBlocked  Boolean  @default(false) @map("is_blocked")
 
   // Relations
-  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orders   Order[]
 
-  @@index([sessionId])
-  @@map("messages")
+  @@index([businessId])
+  @@map("customers")
 }
 
 // ==========================================
@@ -189,9 +135,8 @@ model Order {
   id             String   @id @default(uuid())
   businessId     String   @map("business_id")
   customerId     String?  @map("customer_id")
-  sessionId      String?  @unique @map("session_id")
   createdById    String?  @map("created_by_id")
-  source         String   @default("kasir") // whatsapp, kasir
+  source         String   @default("kasir") // web, kasir
   orderType      String   @default("dine-in") @map("order_type") // dine-in, takeaway, delivery
   totalAmount    Decimal  @map("total_amount") @db.Decimal(12, 2)
   discountAmount Decimal? @default(0) @map("discount_amount") @db.Decimal(12, 2)
@@ -203,10 +148,9 @@ model Order {
   createdAt      DateTime @default(now()) @map("created_at")
 
   // Relations
-  business   Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customer   Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  session    ChatSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  createdBy  User?        @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer   Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdBy  User?       @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   orderItems OrderItem[]
 
   @@index([businessId])

@@ -1,170 +1,165 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Monitoring Rantai Pasok Nasional | BAPER SCM Super Admin",
-};
-
-const SUPPLY_FLOWS = [
-  {
-    hub: "Central Cold Storage Cilandak (Pemasok)",
-    destination: "Kopi Kenangan Senopati #04",
-    item: "Fresh Milk Pasteurisasi (120L) & Arabika Gayo (50kg)",
-    carrier: "Isuzu Giga Chiller Box (B 9481 PXZ)",
-    temperature: "3.2°C (Stabil)",
-    status: "Dalam Perjalanan",
-    statusVariant: "ontheway",
-    eta: "15 Menit Lagi",
-  },
-  {
-    hub: "Gudang Bahan Kering Tangerang",
-    destination: "Fore Coffee Grand Indonesia",
-    item: "Robusta Dampit Fine (40kg) & Vanilla Flavor (12 Botol)",
-    carrier: "Toyota Dyna Thermo King (B 9122 SQR)",
-    temperature: "24.5°C (Bahan Kering)",
-    status: "Bongkar Muat di Gerai",
-    statusVariant: "unloading",
-    eta: "Tiba Pukul 11:30 WIB",
-  },
-  {
-    hub: "Sentra Gula Aren Nusantara (Lebak Bulus)",
-    destination: "Janji Jiwa Tebet Jilid 488",
-    item: "Sirup Aren Organik 5L (10 Jeriken)",
-    carrier: "Gran Max Van (B 9811 KLC)",
-    temperature: "26.0°C (Suhu Ruang)",
-    status: "Selesai Diterima (POD Sah)",
-    statusVariant: "delivered",
-    eta: "Selesai 09:40 WIB",
-  },
-  {
-    hub: "Pabrik Kemasan Cikarang",
-    destination: "Central Warehouse Kopi Kenangan",
-    item: "Paper Cup Hot 8oz (50 Karton / 50.000 Pcs)",
-    carrier: "Hino Dutro Box (B 9044 NMX)",
-    temperature: "Suhu Ruang",
-    status: "Dalam Perjalanan",
-    statusVariant: "ontheway",
-    eta: "45 Menit Lagi",
-  },
-];
+import { usePurchaseOrders } from "@/features/purchase-orders/hooks/use-purchase-orders";
 
 export default function AdminMonitoringPage() {
+  const { data: purchaseOrders = [], isLoading } = usePurchaseOrders();
+
+  const inTransitCount = purchaseOrders.filter((po) => po.status === "shipped").length;
+  const completedCount = purchaseOrders.filter((po) => po.status === "received").length;
+  const qcPassedCount = purchaseOrders.filter((po) => po.qcStatus === "passed").length;
+
   return (
     <>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[12px] font-semibold text-primary uppercase tracking-wider">
-              Telemetri Rantai Pasok Nasional
+              Control Tower &amp; Inbound Dock Surveillance
             </span>
             <span className="text-tertiary text-xs">•</span>
             <span className="text-body-sm text-tertiary font-body-sm">
-              68 Pengiriman Aktif Hari Ini
+              Live Gateway BAPER Platform
             </span>
           </div>
           <h1 className="text-headline-lg font-headline-lg text-[#172033]">
-            Monitoring Rantai Pasok Ekosistem
+            Monitoring Rantai Pasok Nasional
           </h1>
           <p className="text-body-md font-body-md text-tertiary mt-1">
-            Pengawasan real-time pergerakan komoditas pangan dari petani/distributor ke central warehouse dan seluruh gerai F&amp;B.
+            Pemantauan end-to-end distribusi bahan baku F&amp;B dari gudang distributor utama, armada cold-chain, hingga proses QC di dock penerimaan outlet.
           </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            className="h-11 px-4 rounded-xl border border-[#94B9A9] bg-white text-[#172033] hover:bg-[#E8F3EC] font-label-lg text-label-lg flex items-center gap-2 transition-all"
-          >
-            <span className="material-symbols-outlined text-[18px]">refresh</span>
-            <span>Refresh Telemetri</span>
-          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-          <span className="text-label-md font-label-md text-tertiary">Armada Logistik Jalan</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-primary">68 Truk</div>
+          <span className="text-label-md font-label-md text-tertiary">Armada Logistik OTW</span>
+          <div className="mt-2 text-headline-lg font-headline-lg text-primary">{inTransitCount} Armada</div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-            GPS Tracker Terhubung
+            On-Delivery
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-          <span className="text-label-md font-label-md text-tertiary">Cold Chain Integrity</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-primary">99.8%</div>
+          <span className="text-label-md font-label-md text-tertiary">PO Diterima Lengkap</span>
+          <div className="mt-2 text-headline-lg font-headline-lg text-[#172033]">{completedCount} PO</div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-            Suhu 2°C - 4°C Aman
+            Tiba di Gudang Outlet
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-          <span className="text-label-md font-label-md text-tertiary">Peringatan Bottleneck</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-[#B7791F]">1 Titik</div>
-          <span className="inline-block mt-2 text-[11px] font-semibold text-[#B7791F] bg-[#FFF9E6] px-2 py-0.5 rounded-full border border-[#B7791F]/30">
-            Tol Jakarta - Cikampek KM 19
+          <span className="text-label-md font-label-md text-tertiary">Kepatuhan QC Dock</span>
+          <div className="mt-2 text-headline-lg font-headline-lg text-primary">
+            {purchaseOrders.length > 0 ? `${Math.round((qcPassedCount / purchaseOrders.length) * 100)}%` : "100%"}
+          </div>
+          <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
+            Standar HACCP Terjaga
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-          <span className="text-label-md font-label-md text-tertiary">Rata-rata On-Time Arrival</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-primary">98.4%</div>
+          <span className="text-label-md font-label-md text-tertiary">Total PO Terpantau</span>
+          <div className="mt-2 text-headline-lg font-headline-lg text-[#172033]">{purchaseOrders.length} Alur</div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-            Sesuai Target SLA Gerai
+            Live Stream
           </span>
         </div>
       </div>
 
       <div className="space-y-4">
-        {SUPPLY_FLOWS.map((flow, idx) => (
-          <div
-            key={idx}
-            className="bg-white rounded-2xl border border-outline-variant/35 p-6 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] space-y-4"
-          >
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-outline-variant/30">
-              <div className="flex items-start gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-[#E8F3EC] text-primary flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[24px]">local_shipping</span>
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-bold text-[#172033] text-body-md">
-                      {flow.hub} ➔ <span className="text-primary">{flow.destination}</span>
-                    </h3>
-                    <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                        flow.statusVariant === "ontheway"
-                          ? "bg-[#E8F3EC] text-primary"
-                          : flow.statusVariant === "unloading"
-                          ? "bg-[#FFF9E6] text-[#B7791F]"
-                          : "bg-surface-container-low text-tertiary"
-                      }`}
-                    >
-                      {flow.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-tertiary mt-1">Muatan: {flow.item}</p>
-                </div>
-              </div>
-
-              <div className="text-left lg:text-right">
-                <div className="text-xs text-tertiary">Armada &amp; Telemetri:</div>
-                <div className="font-semibold text-on-surface text-body-sm">{flow.carrier}</div>
-                <div className="text-xs font-mono text-primary font-bold">{flow.temperature}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-tertiary pt-1">
-              <span>Status Pengiriman: <strong className="text-on-surface">{flow.eta}</strong></span>
-              <button
-                type="button"
-                className="text-primary font-bold hover:underline flex items-center gap-1"
-              >
-                <span>Lihat Live Map GPS</span>
-                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-              </button>
-            </div>
+        {isLoading ? (
+          <div className="p-12 text-center text-tertiary bg-white rounded-2xl border border-outline-variant/30">
+            Memuat pemantauan armada pasokan...
           </div>
-        ))}
+        ) : purchaseOrders.length === 0 ? (
+          <div className="p-12 text-center text-tertiary bg-white rounded-2xl border border-outline-variant/30">
+            Belum ada pergerakan rantai pasok tercatat.
+          </div>
+        ) : (
+          purchaseOrders.map((po) => {
+            const isDelivered = po.status === "received";
+            const poNo = `#PO-${po.id.slice(0, 8).toUpperCase()}`;
+
+            return (
+              <div
+                key={po.id}
+                className="bg-white rounded-2xl border border-outline-variant/35 p-6 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] space-y-4"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-outline-variant/30">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono font-bold text-primary text-body-md">{poNo}</span>
+                      <span
+                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                          isDelivered
+                            ? "bg-[#E8F3EC] text-primary"
+                            : po.status === "shipped"
+                            ? "bg-[#EFF6FF] text-[#1D4ED8]"
+                            : "bg-[#FFF9E6] text-[#B7791F]"
+                        }`}
+                      >
+                        {isDelivered
+                          ? "Selesai Diterima (Lolos QC)"
+                          : po.status === "shipped"
+                          ? "Dalam Perjalanan"
+                          : "Dikonfirmasi Pemasok"}
+                      </span>
+                    </div>
+                    <div className="font-semibold text-on-surface text-sm mt-1">
+                      Asal: {po.supplier?.name || "Mitra Pemasok"} ➔ Tujuan: {po.business?.name || "Gudang BAPER"}
+                    </div>
+                  </div>
+
+                  <div className="text-left sm:text-right">
+                    <span className="text-xs text-tertiary">Total Nilai Muatan:</span>
+                    <div className="font-headline-sm text-headline-sm font-bold text-primary font-mono">
+                      Rp {Number(po.totalAmount).toLocaleString("id-ID")}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-body-sm">
+                  <div className="p-3 rounded-xl bg-[#F5F8F6] border border-outline-variant/30">
+                    <span className="text-xs text-tertiary font-bold uppercase">Armada Ekspedisi:</span>
+                    <div className="font-semibold text-on-surface text-xs mt-0.5">
+                      {po.driverInfo || "Truk Chiller Termal (B 8821 QC)"}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#F5F8F6] border border-outline-variant/30">
+                    <span className="text-xs text-tertiary font-bold uppercase">Catatan Dokumen:</span>
+                    <div className="font-semibold text-on-surface text-xs mt-0.5 font-mono">
+                      {po.deliveryNote || `DO-${po.id.slice(0, 6).toUpperCase()}`}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#F5F8F6] border border-outline-variant/30">
+                    <span className="text-xs text-tertiary font-bold uppercase">Hasil Verifikasi QC:</span>
+                    <div className="font-semibold text-primary text-xs mt-0.5">
+                      {po.qcStatus === "passed" ? "Lolos Standar HACCP" : "Pemeriksaan Fisik"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-xs font-bold text-tertiary uppercase">Item Pasokan:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {po.purchaseOrderItems.map((item) => (
+                      <span
+                        key={item.id}
+                        className="px-3 py-1 rounded-lg bg-[#F5F8F6] border border-outline-variant/30 text-xs text-on-surface font-medium"
+                      >
+                        {item.ingredient?.name || item.supplierItem?.name} ({item.quantity}{" "}
+                        {item.ingredient?.unit || item.supplierItem?.unit || "Unit"})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </>
   );

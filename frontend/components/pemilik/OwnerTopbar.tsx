@@ -27,17 +27,16 @@ export default function OwnerTopbar() {
           />
         </div>
       </div>
-      {/* Right: Bot Switch, Notifications, Quick Actions, Profile */}
+      {/* Right: Cloud Sync, Notifications, Quick Actions, Profile */}
       <div className="flex items-center gap-4">
-        {/* WhatsApp Bot AI Status Badge / Pill */}
+        {/* System Online Status Badge */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary-container/60 border border-primary-container/20">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-container opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-container" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600" />
           </span>
           <span className="font-label-sm text-label-sm text-on-secondary-container font-semibold flex items-center gap-1">
-            <span className="material-symbols-outlined text-[15px]">neurology</span> Bot WhatsApp AI: Aktif
-            (Gemini)
+            <span className="material-symbols-outlined text-[15px]">cloud_done</span> POS & SCM Cloud: Terhubung
           </span>
         </div>
         {/* Action Icons */}

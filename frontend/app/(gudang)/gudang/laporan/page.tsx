@@ -1,57 +1,26 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Laporan Mutasi & Stok Gudang | BAPER SCM Gudang",
-};
+import { useStockMovements, useInventory } from "@/features/inventory/hooks/use-inventory";
 
-const MUTATIONS = [
-  {
-    trxId: "MUT-202405-091",
-    time: "Hari Ini, 07:15 WIB",
-    type: "Masuk (Inbound QC)",
-    sku: "SKU-BPR-002",
-    item: "Susu Segar Pasteurisasi",
-    qty: "+120 Liter",
-    qtyVariant: "in",
-    ref: "PO-2025-088 (CV Dairy Makmur)",
-    balanceAfter: "148 Liter",
-  },
-  {
-    trxId: "MUT-202405-090",
-    time: "Hari Ini, 07:45 WIB",
-    type: "Keluar (Bar Issue)",
-    sku: "SKU-BPR-001",
-    item: "Biji Kopi Arabika Lintong",
-    qty: "-5.0 kg",
-    qtyVariant: "out",
-    ref: "DSP-KIT-2025-081 (Bar Senopati)",
-    balanceAfter: "14.8 kg",
-  },
-  {
-    trxId: "MUT-202405-089",
-    time: "Hari Ini, 09:45 WIB",
-    type: "Keluar (Distribusi Cabang)",
-    sku: "SKU-BPR-002",
-    item: "Susu Segar Pasteurisasi",
-    qty: "-60 Liter",
-    qtyVariant: "out",
-    ref: "DO-HUB-2024-042 (Cabang SCBD)",
-    balanceAfter: "88 Liter",
-  },
-  {
-    trxId: "MUT-202405-088",
-    time: "Kemarin, 18:00 WIB",
-    type: "Koreksi (Stok Opname)",
-    sku: "SKU-BPR-001",
-    item: "Biji Kopi Arabika Lintong",
-    qty: "-0.2 kg",
-    qtyVariant: "adjust",
-    ref: "OPN-202405-001 (Susut Kalibrasi)",
-    balanceAfter: "19.8 kg",
-  },
-];
+function formatWaktu(isoString: string) {
+  try {
+    const d = new Date(isoString);
+    const p = (n: number) => String(n).padStart(2, "0");
+    const bulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    return `${p(d.getDate())} ${bulan[d.getMonth()]} ${d.getFullYear()}, ${p(d.getHours())}:${p(d.getMinutes())} WIB`;
+  } catch {
+    return "-";
+  }
+}
 
 export default function GudangLaporanPage() {
+  const { data: movements = [], isLoading } = useStockMovements();
+  const { data: inventory = [] } = useInventory();
+
+  const inCount = movements.filter((m) => m.type === "in").length;
+  const outCount = movements.filter((m) => m.type === "out").length;
+  const adjustCount = movements.filter((m) => m.type === "adjust").length;
+
   return (
     <>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
@@ -62,133 +31,127 @@ export default function GudangLaporanPage() {
             </span>
             <span className="text-tertiary text-xs">•</span>
             <span className="text-body-sm text-tertiary font-body-sm">
-              Rekapitulasi Mutasi Barang Masuk &amp; Keluar
+              Rekapitulasi Mutasi Stok Real-Time
             </span>
           </div>
           <h1 className="text-headline-lg font-headline-lg text-[#172033]">
             Laporan Mutasi &amp; Kartu Stok
           </h1>
           <p className="text-body-md font-body-md text-tertiary mt-1">
-            Buku besar mutasi seluruh transaksi penerimaan barang dari pemasok, pengeluaran ke stasiun kitchen, serta pengiriman antar cabang secara kronologis.
+            Buku besar mutasi seluruh transaksi penerimaan barang dari pemasok, pengeluaran ke kitchen / kasir POS, serta koreksi opname secara kronologis.
           </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            className="h-11 px-4 rounded-xl border border-[#94B9A9] bg-white text-on-surface hover:bg-[#E8F3EC] font-label-lg text-label-lg flex items-center gap-2 transition-all"
-          >
-            <span className="material-symbols-outlined text-[18px]">download</span>
-            <span>Unduh Kartu Stok (Excel)</span>
-          </button>
-          <button
-            type="button"
-            className="h-11 px-5 rounded-xl bg-primary text-white hover:bg-[#0D6038] font-label-lg text-label-lg flex items-center gap-2 shadow-sm transition-all active:scale-[0.98]"
-          >
-            <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-            <span>Cetak Rekap Bulanan (PDF)</span>
-          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-          <span className="text-label-md font-label-md text-tertiary">Total Masuk (Inbound Bulan Ini)</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-primary">1.240 Kg / L</div>
+          <span className="text-label-md font-label-md text-tertiary">Total Transaksi Mutasi</span>
+          <div className="mt-2 text-headline-lg font-headline-lg text-primary">{movements.length} Catatan</div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-            18 Pengiriman Pemasok
+            Log Lengkap Database
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-          <span className="text-label-md font-label-md text-tertiary">Total Keluar (Outbound Cabang)</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-[#172033]">1.180 Kg / L</div>
+          <span className="text-label-md font-label-md text-tertiary">Mutasi Masuk (PO/Inbound)</span>
+          <div className="mt-2 text-headline-lg font-headline-lg text-[#137A48]">{inCount} Transaksi</div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-            Terdistribusi ke 3 Outlet
+            Penerimaan Pemasok
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-          <span className="text-label-md font-label-md text-tertiary">Tingkat Susut Fisik (Shrinkage)</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-primary">0.18%</div>
-          <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-            Jauh di Bawah Batas Toleransi 1%
+          <span className="text-label-md font-label-md text-tertiary">Mutasi Keluar (Kitchen/POS)</span>
+          <div className="mt-2 text-headline-lg font-headline-lg text-error">{outCount} Transaksi</div>
+          <span className="inline-block mt-2 text-[11px] font-semibold text-tertiary bg-[#F5F8F6] px-2 py-0.5 rounded-full">
+            Konsumsi Operasional
           </span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
-          <span className="text-label-md font-label-md text-tertiary">Total Nilai Persediaan Aktif</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-[#172033] font-mono">Rp 42.600.000</div>
+          <span className="text-label-md font-label-md text-tertiary">Penyesuaian Opname Fisik</span>
+          <div className="mt-2 text-headline-lg font-headline-lg text-amber-600">{adjustCount} Catatan</div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
-            Metode FIFO Terverifikasi
+            Audit Selisih Stok
           </span>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#F9F9FF] border-b border-outline-variant/30 text-xs font-bold text-tertiary uppercase tracking-wider">
-                <th className="py-4 px-5">ID Mutasi &amp; Waktu</th>
-                <th className="py-4 px-4">Tipe Pergerakan</th>
-                <th className="py-4 px-4">Bahan Baku (SKU)</th>
-                <th className="py-4 px-4">Perubahan Kuantitas</th>
-                <th className="py-4 px-4">Dokumen Referensi</th>
-                <th className="py-4 px-5 text-right">Saldo Akhir Rak</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/20 text-body-sm">
-              {MUTATIONS.map((m) => (
-                <tr key={m.trxId} className="hover:bg-[#F5F8F6]/60 transition-colors">
-                  <td className="py-4 px-5">
-                    <div className="font-bold font-mono text-[#172033]">{m.trxId}</div>
-                    <span className="text-xs text-tertiary">{m.time}</span>
-                  </td>
-
-                  <td className="py-4 px-4">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                        m.qtyVariant === "in"
-                          ? "bg-[#E8F3EC] text-primary"
-                          : m.qtyVariant === "out"
-                          ? "bg-[#EFF6FF] text-[#1D4ED8]"
-                          : "bg-[#FFF9E6] text-[#B7791F]"
-                      }`}
-                    >
-                      {m.type}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-4">
-                    <div className="font-bold text-[#172033]">{m.item}</div>
-                    <span className="text-xs font-mono text-tertiary">{m.sku}</span>
-                  </td>
-
-                  <td className="py-4 px-4 font-mono font-bold">
-                    <span
-                      className={
-                        m.qtyVariant === "in"
-                          ? "text-primary"
-                          : m.qtyVariant === "out"
-                          ? "text-[#1D4ED8]"
-                          : "text-[#B7791F]"
-                      }
-                    >
-                      {m.qty}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-4 text-xs text-on-surface">{m.ref}</td>
-
-                  <td className="py-4 px-5 text-right font-mono font-bold text-[#172033]">
-                    {m.balanceAfter}
-                  </td>
+        {isLoading ? (
+          <div className="p-12 text-center text-tertiary">Memuat log mutasi...</div>
+        ) : movements.length === 0 ? (
+          <div className="p-12 text-center text-tertiary">Belum ada riwayat mutasi tercatat.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#F9F9FF] border-b border-outline-variant/30 text-xs font-bold text-tertiary uppercase tracking-wider">
+                  <th className="py-4 px-5">ID Mutasi &amp; Waktu</th>
+                  <th className="py-4 px-4">Nama Bahan Baku</th>
+                  <th className="py-4 px-4">Jenis Mutasi</th>
+                  <th className="py-4 px-4 text-right">Perubahan Qty</th>
+                  <th className="py-4 px-4">Petugas / Operator</th>
+                  <th className="py-4 px-5">ID Referensi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/20 text-body-sm">
+                {movements.map((m) => {
+                  const isIn = m.type === "in";
+                  const isOut = m.type === "out";
+                  const unit = m.ingredient?.unit || "Unit";
+                  const mutId = `MUT-${m.id.slice(0, 8).toUpperCase()}`;
+
+                  return (
+                    <tr key={m.id} className="hover:bg-[#F5F8F6]/60 transition-colors">
+                      <td className="py-4 px-5">
+                        <span className="font-mono font-bold text-primary">{mutId}</span>
+                        <div className="text-xs text-tertiary mt-0.5">{formatWaktu(m.createdAt)}</div>
+                      </td>
+
+                      <td className="py-4 px-4 font-bold text-[#172033]">
+                        {m.ingredient?.name || "Bahan Baku"}
+                      </td>
+
+                      <td className="py-4 px-4">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                            isIn
+                              ? "bg-[#E8F3EC] text-[#137A48]"
+                              : isOut
+                              ? "bg-[#FFF9E6] text-[#B7791F]"
+                              : "bg-blue-50 text-blue-700"
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[13px]">
+                            {isIn ? "arrow_downward" : isOut ? "arrow_upward" : "tune"}
+                          </span>
+                          {isIn ? "Masuk (Penerimaan PO)" : isOut ? "Keluar (Produksi/POS)" : "Koreksi Opname"}
+                        </span>
+                      </td>
+
+                      <td
+                        className={`py-4 px-4 text-right font-mono font-bold ${
+                          isIn ? "text-[#137A48]" : isOut ? "text-error" : "text-blue-700"
+                        }`}
+                      >
+                        {isIn ? `+${Number(m.qty).toLocaleString("id-ID")}` : `-${Number(m.qty).toLocaleString("id-ID")}`} {unit}
+                      </td>
+
+                      <td className="py-4 px-4 text-on-surface">
+                        {m.createdBy?.name || "Petugas Gudang"}
+                      </td>
+
+                      <td className="py-4 px-5 font-mono text-xs text-tertiary">
+                        {m.referenceId ? `#${m.referenceId.slice(0, 10)}` : "-"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </>
   );

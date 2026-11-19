@@ -20,6 +20,13 @@ export class SuppliersController {
     return ServiceResponse.success("Profil pemasok berhasil dimuat", data);
   }
 
+  @Get("my-catalog")
+  @ApiOperation({ summary: "Ambil komoditas item jualan pemasok yang login" })
+  async getMyCatalog(@CurrentUser("id") userId: string) {
+    const data = await this.suppliersService.getMyCatalog(userId);
+    return ServiceResponse.success("Katalog komoditas pemasok berhasil dimuat", data);
+  }
+
   @Get()
   @ApiOperation({ summary: "Ambil daftar seluruh mitra pemasok dan katalognya" })
   async findAll() {

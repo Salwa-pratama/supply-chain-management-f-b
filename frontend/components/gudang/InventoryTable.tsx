@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { INVENTARIS, type ItemGudang, type StatusStok } from "@/lib/gudang-data";
+import { type ItemGudang, type StatusStok } from "@/lib/gudang-data";
 import { useInventory } from "@/features/inventory/hooks/use-inventory";
 
 const STATUS: Record<StatusStok, { label: string; badge: string; dot: string }> = {
@@ -156,7 +156,7 @@ export default function InventoryTable({ onOpname, onPO, onAdd }: Aksi & { onAdd
         };
       });
     }
-    return INVENTARIS;
+    return [];
   }, [dbItems]);
 
   const rows = useMemo(() => {
