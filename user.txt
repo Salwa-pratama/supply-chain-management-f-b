@@ -1,20 +1,20 @@
-SUPER ADMIN : 
+SUPER ADMIN :
 email : admin@baper.id
 pw : Admin#2025
 
-Pemilik Gerai : 
-email : owner@baperfnb.com 
-pw : RahasiaSuper2025! 
+Pemilik Gerai :
+email : owner@baperfnb.com
+pw : RahasiaSuper2025!
 
-manajer_gudang : 
-email : gudang@baperfnb.com 
+manajer_gudang :
+email : gudang@baperfnb.com
 pw : Gudang#2025
 
 
-KASIR : 
+KASIR :
 email : kasir1@baperfnb.com
 pw : Kasir#2025
 
-MITRA PEMASOK 
-email : pemasok@baper.id 
-pw : Pemasok#2025 
+MITRA PEMASOK
+email : pemasok@baper.id
+pw : Pemasok#2025

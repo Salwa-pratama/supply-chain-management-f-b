@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 
 import QueryProvider from "@/providers/query-provider";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ProgressToastProvider } from "@/components/ui/ProgressToast";
 
 export default function RootLayout({
   children,
@@ -50,7 +51,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <QueryProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <ProgressToastProvider>{children}</ProgressToastProvider>
+          </ToastProvider>
         </QueryProvider>
       </body>
     </html>

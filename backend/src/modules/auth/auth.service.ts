@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
@@ -172,8 +174,95 @@ export class AuthService {
     };
   }
 
-  async getProfile(userId: string) {
-    const user = await this.prisma.user.findUnique({
+  /**
+   * Membuat token reset kata sandi yang berlaku 1 jam.
+   * Respons selalu generik agar email terdaftar/tidak tidak bisa ditebak.
+   */
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const email = dto.email.toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return {
+        email,
+        resetUrl: null,
+        expiresAt: null,
+        message:
+          'Jika email terdaftar, tautan reset kata sandi telah dibuat. Periksa kotak masuk Anda.',
+      };
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 jam
+
+    await this.prisma.authToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+      },
+    });
+
+    const appUrl = (
+      process.env.FRONTEND_URL ||
+      process.env.APP_URL ||
+      'http://localhost:3000'
+    ).replace(/\/$/, '');
+
+    return {
+      email: user.email,
+      resetUrl: `${appUrl}/reset-password?token=${token}`,
+      expiresAt,
+      message:
+        'Tautan reset kata sandi berhasil dibuat. Di environment development, tautan ditampilkan langsung.',
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const authToken = await this.prisma.authToken.findFirst({
+      where: { token: dto.token },
+      include: { user: true },
+    });
+
+    if (!authToken) {
+      throw new UnauthorizedException(
+        'Tautan reset tidak valid atau sudah pernah digunakan.',
+      );
+    }
+
+    if (authToken.expiresAt.getTime() < Date.now()) {
+      await this.prisma.authToken.delete({ where: { id: authToken.id } });
+      throw new UnauthorizedException(
+        'Tautan reset sudah kedaluwarsa. Silakan minta tautan baru.',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: authToken.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.authToken.delete({ where: { id: authToken.id } }),
+      // Cabut token reset lain milik pengguna yang sama.
+      this.prisma.authToken.deleteMany({
+        where: {
+          userId: authToken.userId,
+          token: { not: authToken.token },
+          expiresAt: { lt: new Date() },
+        },
+      }),
+    ]);
+
+    return {
+      email: authToken.user.email,
+      message:
+        'Kata sandi berhasil diperbarui. Silakan masuk dengan kata sandi baru Anda.',
+    };
+  }
+
+  async getProfile(userId: string) {    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,

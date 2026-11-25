@@ -21,6 +21,10 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ServiceResponse } from '../../common/models/service_response';
 import { AuthService } from './auth.service';
 import { AuthResponseDataDto, UserProfileDto } from './dto/auth-response.dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -66,6 +70,39 @@ export class AuthController {
     const result = await this.authService.login(dto);
     return ServiceResponse.success(
       'Login berhasil',
+      result,
+      StatusCodes.OK,
+    );
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Minta Tautan Reset Kata Sandi',
+    description:
+      'Membuat token reset sekali pakai yang berlaku 1 jam. Di environment development, `resetUrl` dikembalikan langsung agar bisa diuji tanpa email.',
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const result = await this.authService.forgotPassword(dto);
+    return ServiceResponse.success(
+      'Permintaan reset kata sandi diproses',
+      result,
+      StatusCodes.OK,
+    );
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reset Kata Sandi dengan Token',
+    description:
+      'Mengganti kata sandi menggunakan token dari halaman lupa kata sandi.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Token tidak valid atau kedaluwarsa.' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const result = await this.authService.resetPassword(dto);
+    return ServiceResponse.success(
+      'Kata sandi berhasil diperbarui',
       result,
       StatusCodes.OK,
     );

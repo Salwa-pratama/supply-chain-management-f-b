@@ -134,8 +134,19 @@ export default function PemilikProdukPage() {
   const handleDelete = (p: ProductItem) => {
     if (!confirm(`Hapus menu "${p.name}" dari katalog toko?`)) return;
     deleteProductMutation.mutate(p.id, {
-      onSuccess: () => showToast(`Menu "${p.name}" berhasil dihapus.`),
-      onError: (err) => alert(`Gagal menghapus: ${err.message}`),
+      onSuccess: (result) => {
+        showToast(
+          result?.message ||
+            (result?.softDeleted
+              ? `Menu "${p.name}" diarsipkan dan dinonaktifkan dari katalog.`
+              : `Menu "${p.name}" berhasil dihapus.`)
+        );
+      },
+      onError: (err) => {
+        const message = err?.message || "Terjadi kesalahan pada server.";
+        showToast(`Gagal menghapus: ${message}`);
+        alert(`Gagal menghapus: ${message}`);
+      },
     });
   };
 

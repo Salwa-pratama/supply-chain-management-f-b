@@ -36,8 +36,16 @@ export async function updateProductApi(params: {
   });
 }
 
-export async function deleteProductApi(id: string): Promise<{ success: boolean }> {
-  return apiClient<{ success: boolean }>(`/products/${id}`, {
+export async function deleteProductApi(id: string): Promise<{
+  success: boolean;
+  softDeleted?: boolean;
+  message?: string;
+}> {
+  return apiClient<{
+    success: boolean;
+    softDeleted?: boolean;
+    message?: string;
+  }>(`/products/${id}`, {
     method: "DELETE",
   });
 }

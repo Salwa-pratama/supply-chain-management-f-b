@@ -17,8 +17,6 @@ export interface NavGroupConfig {
 
 export interface DashboardConfig {
   role: DashboardRole;
-  roleBadge: string;
-  roleSubtitle: string;
   portalTitle: string;
   homeUrl: string;
   quickAction?: {
@@ -36,8 +34,6 @@ export interface DashboardConfig {
 export const DASHBOARD_NAV_CONFIG: Record<DashboardRole, DashboardConfig> = {
   admin: {
     role: "admin",
-    roleBadge: "SUPER ADMIN",
-    roleSubtitle: "Pusat Ekosistem Nasional",
     portalTitle: "Pusat Kendali Ekosistem BAPER SCM",
     homeUrl: "/admin/dashboard",
     quickAction: {
@@ -65,8 +61,6 @@ export const DASHBOARD_NAV_CONFIG: Record<DashboardRole, DashboardConfig> = {
 
   pemilik: {
     role: "pemilik",
-    roleBadge: "PEMILIK BISNIS",
-    roleSubtitle: "Store & Chain Management",
     portalTitle: "Portal Pemilik Bisnis F&B",
     homeUrl: "/pemilik/dashboard",
     quickAction: {
@@ -104,8 +98,6 @@ export const DASHBOARD_NAV_CONFIG: Record<DashboardRole, DashboardConfig> = {
 
   gudang: {
     role: "gudang",
-    roleBadge: "MANAGER GUDANG",
-    roleSubtitle: "Hub Logistik & Bahan Baku",
     portalTitle: "Portal Manajemen Gudang & Logistik",
     homeUrl: "/gudang/dashboard",
     quickAction: {
@@ -134,8 +126,6 @@ export const DASHBOARD_NAV_CONFIG: Record<DashboardRole, DashboardConfig> = {
 
   pemasok: {
     role: "pemasok",
-    roleBadge: "PORTAL PEMASOK",
-    roleSubtitle: "B2B Supply Hub",
     portalTitle: "Portal Pasokan Bahan Baku F&B",
     homeUrl: "/pemasok/dashboard",
     quickAction: {

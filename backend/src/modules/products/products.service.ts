@@ -130,9 +130,41 @@ export class ProductsService {
 
   async remove(id: string, userId: string) {
     const product = await this.findOne(id, userId);
-    await this.prisma.product.delete({
-      where: { id: product.id },
-    });
-    return { success: true, message: `Produk ${product.name} berhasil dihapus.` };
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // Resep (BOM) tidak lagi dibutuhkan ketika produk dihapus.
+        await tx.productIngredient.deleteMany({ where: { productId: product.id } });
+        await tx.product.delete({ where: { id: product.id } });
+      });
+
+      return {
+        success: true,
+        softDeleted: false,
+        message: `Produk ${product.name} berhasil dihapus.`,
+      };
+    } catch (error) {
+      // Produk yang sudah punya riwayat pesanan tidak boleh hilang dari laporan,
+      // jadi arsipkan dengan menonaktifkannya dari katalog/kasir.
+      const code =
+        typeof error === "object" && error !== null && "code" in error
+          ? String((error as { code?: unknown }).code)
+          : "";
+
+      if (code === "P2003" || code === "P2014") {
+        await this.prisma.product.update({
+          where: { id: product.id },
+          data: { isAvailable: false },
+        });
+
+        return {
+          success: true,
+          softDeleted: true,
+          message: `Produk ${product.name} memiliki riwayat pesanan, sehingga diarsipkan dan dinonaktifkan dari katalog (bukan dihapus permanen).`,
+        };
+      }
+
+      throw error;
+    }
   }
 }

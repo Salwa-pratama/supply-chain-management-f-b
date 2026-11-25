@@ -135,3 +135,25 @@ body {
 .stage-card-active {
   box-shadow: 0 0 0 3px rgba(19, 122, 72, 0.25), 0 8px 24px -4px rgba(0, 95, 53, 0.12);
 }
+
+/* Progress toast (kanan bawah) */
+@keyframes progress-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.progress-toast-in {
+  animation: progress-toast-in 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-toast-in {
+    animation: none;
+  }
+}

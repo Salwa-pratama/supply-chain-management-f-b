@@ -1,5 +1,6 @@
-export default function PemasokTopbar() {
-  return (
+import NotificationBell from "@/components/notifications/NotificationBell";
+
+export default function PemasokTopbar() {  return (
     <header className="sticky top-0 z-30 h-16 bg-surface-container-lowest/95 backdrop-blur-md border-b border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)] px-8 flex items-center justify-between">
       {/* Search & Merchant Partner Identity */}
       <div className="flex items-center gap-6">
@@ -42,14 +43,12 @@ export default function PemasokTopbar() {
             <span className="material-symbols-outlined text-[16px] text-tertiary">arrow_drop_down</span>
           </button>
         </div>
-        {/* Notification Bell with Ping */}
-        <button
-          className="relative w-10 h-10 rounded-xl border border-outline-variant/50 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-[#E8F3EC] transition-colors"
+        {/* Notification Bell */}
+        <NotificationBell
           title="Notifikasi Baru"
-        >
-          <span className="material-symbols-outlined text-[20px]">notifications</span>
-          <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#B54747] rounded-full border-2 border-white" />
-        </button>
+          viewAllHref="/pemasok/notifikasi"
+          buttonClassName="relative w-10 h-10 rounded-xl border border-outline-variant/50 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-[#E8F3EC] transition-colors"
+        />
         {/* Divider */}
         <div className="h-6 w-[1px] bg-outline-variant/40" />
         {/* Profile Avatar & Meta */}

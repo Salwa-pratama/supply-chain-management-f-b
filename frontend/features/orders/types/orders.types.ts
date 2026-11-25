@@ -29,6 +29,13 @@ export interface OrderItemData {
   createdBy?: { id: string; name: string } | null;
 }
 
+export type OrderStatus =
+  | "pending"
+  | "paid"
+  | "preparing"
+  | "completed"
+  | "cancelled";
+
 export interface CreateOrderPayload {
   orderType?: string;
   totalAmount: number;

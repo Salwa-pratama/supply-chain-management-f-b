@@ -12,6 +12,10 @@ import {
 } from "@/features/auth/utils/role-routes";
 import { useToast } from "@/components/ui/Toast";
 import { formatErrorMessage } from "@/lib/error-formatter";
+import {
+  ForgotPasswordResult,
+  forgotPasswordApi,
+} from "@/features/auth/api/password";
 
 // Jeda agar pesan berhasil sempat terbaca sebelum pindah halaman.
 const REDIRECT_DELAY_MS = 1200;
@@ -27,6 +31,12 @@ export default function LoginPage() {
   const [errors, setErrors] = useState({ identifier: false, password: false });
   const [errorDetails, setErrorDetails] = useState<{ title: string; message: string } | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
+
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotResult, setForgotResult] = useState<ForgotPasswordResult | null>(null);
 
   const loginMutation = useLogin({
     onSuccess: (data) => {
@@ -86,6 +96,54 @@ export default function LoginPage() {
       password: password.trim(),
       remember,
     });
+  }
+
+  function openForgotModal() {
+    setForgotEmail(identifier.trim());
+    setForgotError(null);
+    setForgotResult(null);
+    setForgotOpen(true);
+  }
+
+  async function handleForgotSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    const email = forgotEmail.trim();
+    if (!email) {
+      setForgotError("Masukkan email akun yang terdaftar.");
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotError(null);
+
+    try {
+      const result = await forgotPasswordApi(email);
+      setForgotResult(result);
+      toast.success(
+        result.message || "Tautan reset kata sandi berhasil dibuat.",
+        "Permintaan Reset Terkirim"
+      );
+    } catch (err) {
+      const parsed = formatErrorMessage(err, "login");
+      setForgotError(parsed.message);
+      toast.error(parsed.message, parsed.title);
+    } finally {
+      setForgotLoading(false);
+    }
+  }
+
+  async function handleCopyResetLink() {
+    if (!forgotResult?.resetUrl) return;
+    try {
+      await navigator.clipboard.writeText(forgotResult.resetUrl);
+      toast.success("Tautan reset disalin ke clipboard.", "Berhasil Disalin");
+    } catch {
+      toast.warning(
+        "Browser memblokir clipboard. Salin tautan secara manual.",
+        "Tidak Bisa Menyalin"
+      );
+    }
   }
 
   // Kelas input: normal vs error
@@ -290,12 +348,13 @@ export default function LoginPage() {
                   />
                   <span className="font-body-md text-body-md text-[#172033]">Ingat saya</span>
                 </label>
-                <Link
-                  href="#"
+                <button
+                  type="button"
+                  onClick={openForgotModal}
                   className="font-label-md text-label-md font-medium text-[#137A48] hover:underline focus:outline-none"
                 >
                   Lupa kata sandi?
-                </Link>
+                </button>
               </div>
 
               {/* Tombol masuk */}
@@ -389,6 +448,193 @@ export default function LoginPage() {
       </main>
 
       <SiteFooter />
+
+      {forgotOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#121B2E]/45 backdrop-blur-sm"
+          role="presentation"
+          onClick={() => setForgotOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="forgot-password-title"
+            className="w-full max-w-md bg-white rounded-[24px] border border-black/5 shadow-[0_24px_60px_-20px_rgba(23,32,51,0.45)] overflow-hidden"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
+              <div className="flex items-start gap-3">
+                <span className="w-11 h-11 rounded-2xl bg-[#E8F3EC] text-[#137A48] flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">
+                    lock_reset
+                  </span>
+                </span>
+                <div>
+                  <h2
+                    id="forgot-password-title"
+                    className="font-headline-sm text-headline-sm text-[#172033] font-bold"
+                  >
+                    Lupa Kata Sandi?
+                  </h2>
+                  <p className="font-body-sm text-body-sm text-[#7B8794] mt-0.5">
+                    Masukkan email akun untuk membuat tautan reset yang berlaku 1 jam.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForgotOpen(false)}
+                className="p-1.5 rounded-lg text-[#7B8794] hover:bg-[#F5F8F6] hover:text-[#172033] transition-colors"
+                aria-label="Tutup dialog"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  close
+                </span>
+              </button>
+            </div>
+
+            {forgotResult ? (
+              <div className="px-6 pb-6 space-y-4">
+                <div className="flex items-start gap-3 p-4 rounded-[16px] bg-[#E8F3EC] border border-[#137A48]/25">
+                  <span
+                    className="material-symbols-outlined text-[#137A48] text-xl"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    mark_email_read
+                  </span>
+                  <div>
+                    <p className="font-label-md text-label-md font-bold text-[#137A48]">
+                      Permintaan reset diproses
+                    </p>
+                    <p className="font-body-sm text-body-sm text-[#172033]/80 mt-0.5">
+                      {forgotResult.message}
+                    </p>
+                  </div>
+                </div>
+
+                {forgotResult.resetUrl ? (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="block font-label-md text-label-md text-[#172033] font-semibold">
+                        Tautan Reset (mode development)
+                      </label>
+                      <div className="p-3 rounded-xl bg-[#F5F8F6] border border-[#94B9A9]/60">
+                        <p className="font-mono text-[11px] text-[#172033] break-all">
+                          {forgotResult.resetUrl}
+                        </p>
+                      </div>
+                      <p className="font-body-sm text-body-sm text-[#7B8794]">
+                        Di produksi tautan ini dikirim ke email terdaftar.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCopyResetLink}
+                        className="flex-1 h-11 rounded-xl border border-[#94B9A9] bg-white text-[#172033] font-label-md text-label-md flex items-center justify-center gap-1.5 hover:bg-[#E8F3EC] transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          content_copy
+                        </span>
+                        Salin Tautan
+                      </button>
+                      <Link
+                        href={forgotResult.resetUrl.replace(
+                          /^https?:\/\/[^/]+/,
+                          ""
+                        )}
+                        className="flex-1 h-11 rounded-xl bg-[#137A48] text-white font-label-md text-label-md flex items-center justify-center gap-1.5 hover:bg-[#0D6038] transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          open_in_new
+                        </span>
+                        Buka Halaman Reset
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <p className="font-body-sm text-body-sm text-[#7B8794]">
+                    Demi keamanan, kami tidak mengonfirmasi apakah email terdaftar.
+                    Jika tidak menerima tautan, periksa kembali alamat email Anda.
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(false)}
+                  className="w-full h-11 rounded-xl bg-[#F5F8F6] text-[#172033] font-label-md text-label-md font-semibold hover:bg-[#E8F3EC] transition-colors"
+                >
+                  Kembali ke Login
+                </button>
+              </div>
+            ) : (
+              <form className="px-6 pb-6 space-y-4" onSubmit={handleForgotSubmit}>
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="forgot-email"
+                    className="block font-label-md text-label-md text-[#172033] font-semibold"
+                  >
+                    Email Akun
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-4 text-[#7B8794] flex items-center pointer-events-none">
+                      <span className="material-symbols-outlined text-[20px]">
+                        alternate_email
+                      </span>
+                    </span>
+                    <input
+                      id="forgot-email"
+                      type="email"
+                      autoComplete="email"
+                      value={forgotEmail}
+                      onChange={(event) => setForgotEmail(event.target.value)}
+                      placeholder="nama@tokoanda.com"
+                      className={`${inputBase} pr-4 ${inputNormal}`}
+                    />
+                  </div>
+                </div>
+
+                {forgotError && (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-2 p-3 rounded-xl bg-[#FDF2F2] border border-[#B54747]/30 text-[#B54747]"
+                  >
+                    <span className="material-symbols-outlined text-[18px] mt-0.5">
+                      error
+                    </span>
+                    <p className="font-body-sm text-body-sm">{forgotError}</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className={`w-full h-12 bg-[#137A48] hover:bg-[#0D6038] text-white font-label-lg text-label-lg rounded-[16px] shadow-sm flex items-center justify-center gap-2 transition duration-150 active:scale-[0.98] ${
+                    forgotLoading ? "opacity-75 cursor-wait" : ""
+                  }`}
+                >
+                  <span>{forgotLoading ? "Memproses..." : "Kirim Tautan Reset"}</span>
+                  <span className="material-symbols-outlined text-[18px]">
+                    {forgotLoading ? "progress_activity" : "send"}
+                  </span>
+                </button>
+
+                <p className="text-center font-body-sm text-body-sm text-[#7B8794]">
+                  Ingat kata sandi Anda?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setForgotOpen(false)}
+                    className="font-semibold text-[#137A48] hover:underline"
+                  >
+                    Kembali ke login
+                  </button>
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

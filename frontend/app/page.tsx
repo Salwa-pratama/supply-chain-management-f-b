@@ -21,26 +21,7 @@ export default function LandingPage() {
               </span>{" "}
               BAPER
             </Link>
-            <nav className="hidden md:flex items-center gap-6">
-              <a
-                className="text-primary font-bold border-b-2 border-primary py-1 text-label-lg font-label-lg transition-colors duration-150"
-                href="#fitur"
-              >
-                Fitur Solusi
-              </a>
-              <a
-                className="text-on-surface-variant hover:text-primary transition-colors duration-150 py-1 text-label-lg font-label-lg"
-                href="#"
-              >
-                Harga & Paket
-              </a>
-              <a
-                className="text-on-surface-variant hover:text-primary transition-colors duration-150 py-1 text-label-lg font-label-lg"
-                href="#"
-              >
-                Bantuan
-              </a>
-            </nav>
+            
           </div>
           <div className="flex items-center gap-4">
             <Link

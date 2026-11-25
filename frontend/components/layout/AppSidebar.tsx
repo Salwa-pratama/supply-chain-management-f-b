@@ -33,14 +33,6 @@ export default function AppSidebar({
         {/* Logo & Portal Identity */}
         <div className="flex items-center gap-3 px-2 pt-1 pb-2 border-b border-outline-variant/20">
           <Logo className="h-8 w-auto shrink-0" />
-          <div className="flex flex-col min-w-0">
-            <span className="inline-block bg-[#E8F3EC] text-primary text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full border border-primary/20 w-max">
-              {config.roleBadge}
-            </span>
-            <span className="text-[11px] text-tertiary font-medium truncate mt-0.5">
-              {config.roleSubtitle}
-            </span>
-          </div>
         </div>
 
         {/* Quick Action Button */}

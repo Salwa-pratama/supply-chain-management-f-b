@@ -1,10 +1,19 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { ServiceResponse } from "../../common/models/service_response";
 import { OrdersService } from "./orders.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
+import { UpdateOrderStatusDto } from "./dto/update-order-status.dto";
 
 @ApiTags("Orders")
 @Controller("orders")
@@ -25,6 +34,19 @@ export class OrdersController {
   async getTodayStats(@CurrentUser("id") userId: string) {
     const data = await this.ordersService.getTodayStats(userId);
     return ServiceResponse.success("Statistik kasir hari ini berhasil dimuat", data);
+  }
+
+  @Patch(":id/status")
+  @ApiOperation({
+    summary: "Ubah status pesanan (kirim ke Kitchen & Barista / selesai)",
+  })
+  async updateStatus(
+    @Param("id") id: string,
+    @Body() dto: UpdateOrderStatusDto,
+    @CurrentUser("id") userId: string
+  ) {
+    const data = await this.ordersService.updateStatus(id, dto.status, userId);
+    return ServiceResponse.success("Status pesanan berhasil diperbarui", data);
   }
 
   @Get(":id")

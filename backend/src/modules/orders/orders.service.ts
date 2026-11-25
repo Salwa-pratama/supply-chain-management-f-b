@@ -1,7 +1,24 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
 import { BusinessService } from "../business/business.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
+import { OrderStatus } from "./dto/update-order-status.dto";
+
+/**
+ * Transisi status yang diizinkan agar antrean kitchen tetap konsisten.
+ * paid -> preparing -> completed, dengan pembatalan dari status aktif.
+ */
+const ALLOWED_TRANSITIONS: Record<string, OrderStatus[]> = {
+  pending: ["paid", "cancelled"],
+  paid: ["preparing", "completed", "cancelled"],
+  preparing: ["completed", "cancelled"],
+  completed: [],
+  cancelled: [],
+};
 
 @Injectable()
 export class OrdersService {
@@ -47,6 +64,40 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  /**
+   * Memindahkan status pesanan (contoh: kirim ke Kitchen & Barista).
+   * Dipakai dashboard pemilik untuk alur paid -> preparing -> completed.
+   */
+  async updateStatus(id: string, status: OrderStatus, userId: string) {
+    const businessId = await this.businessService.getBusinessForUser(userId);
+
+    const order = await this.prisma.order.findFirst({
+      where: { id, businessId },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Pesanan ${id} tidak ditemukan.`);
+    }
+
+    if (order.status === status) {
+      return this.findOne(id, userId);
+    }
+
+    const allowed = ALLOWED_TRANSITIONS[order.status] ?? [];
+    if (!allowed.includes(status)) {
+      throw new BadRequestException(
+        `Status pesanan tidak dapat diubah dari "${order.status}" ke "${status}".`
+      );
+    }
+
+    await this.prisma.order.update({
+      where: { id: order.id },
+      data: { status },
+    });
+
+    return this.findOne(id, userId);
   }
 
   /**
