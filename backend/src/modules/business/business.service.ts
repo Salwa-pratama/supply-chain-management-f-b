@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service";
-import { AddMemberDto } from "./dto/add-member.dto";
+import { AddMemberDto, CreateBranchDto } from "./dto/add-member.dto";
 import * as bcrypt from "bcrypt";
 
 @Injectable()
@@ -52,10 +52,17 @@ export class BusinessService {
         owner: {
           select: { id: true, name: true, email: true },
         },
+        branches: {
+          where: { isActive: true },
+          orderBy: [{ isMain: "desc" }, { createdAt: "asc" }],
+        },
         members: {
           include: {
             user: {
-              select: { id: true, name: true, email: true, role: true },
+              select: { id: true, name: true, email: true, role: true, isActive: true },
+            },
+            branch: {
+              select: { id: true, name: true, code: true, address: true, isMain: true },
             },
           },
         },
@@ -66,7 +73,56 @@ export class BusinessService {
       throw new NotFoundException("Bisnis tidak ditemukan.");
     }
 
-    return business;
+    const currentMembership =
+      business.members.find((m) => m.userId === userId && m.isActive) ?? null;
+
+    return {
+      ...business,
+      assignedBranch: currentMembership?.branch ?? null,
+    };
+  }
+
+  async getBranches(userId: string) {
+    const businessId = await this.getBusinessForUser(userId);
+    return this.prisma.branch.findMany({
+      where: { businessId, isActive: true },
+      include: {
+        _count: {
+          select: { members: true },
+        },
+      },
+      orderBy: [{ isMain: "desc" }, { createdAt: "asc" }],
+    });
+  }
+
+  async createBranch(userId: string, dto: CreateBranchDto) {
+    const businessId = await this.getBusinessForUser(userId);
+
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.isMain) {
+        await tx.branch.updateMany({
+          where: { businessId },
+          data: { isMain: false },
+        });
+      }
+
+      return tx.branch.create({
+        data: {
+          businessId,
+          name: dto.name.trim(),
+          code: dto.code?.trim() || null,
+          address: dto.address?.trim() || null,
+          phone: dto.phone?.trim() || null,
+          isMain: Boolean(dto.isMain),
+          isActive: true,
+        },
+        include: {
+          _count: {
+            select: { members: true },
+          },
+        },
+      });
+    });
   }
 
   async updateMyBusiness(
@@ -123,6 +179,15 @@ export class BusinessService {
             createdAt: true,
           },
         },
+        branch: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            isMain: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -134,6 +199,23 @@ export class BusinessService {
   async addMember(userId: string, dto: AddMemberDto) {
     const businessId = await this.getBusinessForUser(userId);
     const normalizedEmail = dto.email.trim().toLowerCase();
+
+    let resolvedBranchId: string | null = null;
+    if (dto.branchId) {
+      const targetBranch = await this.prisma.branch.findFirst({
+        where: { id: dto.branchId, businessId, isActive: true },
+      });
+      if (!targetBranch) {
+        throw new NotFoundException("Cabang penugasan tidak ditemukan di bisnis Anda.");
+      }
+      resolvedBranchId = targetBranch.id;
+    } else {
+      const defaultBranch = await this.prisma.branch.findFirst({
+        where: { businessId, isActive: true },
+        orderBy: [{ isMain: "desc" }, { createdAt: "asc" }],
+      });
+      resolvedBranchId = defaultBranch?.id ?? null;
+    }
 
     // 1. Cek apakah user sudah terdaftar di database
     let user = await this.prisma.user.findUnique({
@@ -172,6 +254,7 @@ export class BusinessService {
     return this.prisma.businessMember.create({
       data: {
         businessId,
+        branchId: resolvedBranchId,
         userId: user.id,
         role: dto.role,
         isActive: true,
@@ -185,6 +268,53 @@ export class BusinessService {
             role: true,
             isActive: true,
           },
+        },
+        branch: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            isMain: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Mengubah cabang tempat staf bertugas
+   */
+  async updateMemberBranch(userId: string, memberId: string, branchId?: string | null) {
+    const businessId = await this.getBusinessForUser(userId);
+    const member = await this.prisma.businessMember.findFirst({
+      where: { id: memberId, businessId },
+    });
+
+    if (!member) {
+      throw new NotFoundException("Data staf tidak ditemukan di bisnis Anda.");
+    }
+
+    let resolvedBranchId: string | null = null;
+    if (branchId && branchId.trim()) {
+      const branch = await this.prisma.branch.findFirst({
+        where: { id: branchId.trim(), businessId, isActive: true },
+      });
+      if (!branch) {
+        throw new NotFoundException("Cabang tujuan tidak ditemukan di bisnis Anda.");
+      }
+      resolvedBranchId = branch.id;
+    }
+
+    return this.prisma.businessMember.update({
+      where: { id: memberId },
+      data: { branchId: resolvedBranchId },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, role: true, isActive: true },
+        },
+        branch: {
+          select: { id: true, name: true, code: true, address: true, isMain: true },
         },
       },
     });
@@ -209,6 +339,9 @@ export class BusinessService {
       include: {
         user: {
           select: { id: true, name: true, email: true, role: true, isActive: true },
+        },
+        branch: {
+          select: { id: true, name: true, code: true, address: true, isMain: true },
         },
       },
     });

@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useInventory, useStockOpname } from "@/features/inventory/hooks/use-inventory";
+import { useActiveUserProfile } from "@/features/auth/hooks/use-auth-user";
 
 export default function GudangOpnamePage() {
   const { data: items = [], isLoading } = useInventory();
+  const activeUser = useActiveUserProfile();
+  const auditorName = activeUser?.name || "Petugas Gudang";
   const stockOpnameMutation = useStockOpname();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -123,7 +126,7 @@ export default function GudangOpnamePage() {
 
         <div className="bg-white p-5 rounded-2xl border border-outline-variant/35 shadow-[0_4px_20px_-2px_rgba(23,32,51,0.04)]">
           <span className="text-label-md font-label-md text-tertiary">Petugas Audit</span>
-          <div className="mt-2 text-headline-lg font-headline-lg text-[#172033]">Bambang Prakoso</div>
+          <div className="mt-2 text-headline-lg font-headline-lg text-[#172033]">{auditorName}</div>
           <span className="inline-block mt-2 text-[11px] font-semibold text-primary bg-[#E8F3EC] px-2 py-0.5 rounded-full">
             Manager Gudang
           </span>

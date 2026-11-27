@@ -36,6 +36,24 @@ export default function PemilikProdukPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  const getPortionCapacity = (prd: ProductItem) => {
+    if (!prd.isAvailable) return { capacity: 0, label: "Nonaktif / Habis", isAvailable: false };
+    const bom = prd.productIngredients || [];
+    if (bom.length === 0) return { capacity: 50, label: "Siap (Tanpa BOM)", isAvailable: true };
+
+    const limits = bom.map((pi) => {
+      const req = Number(pi.qtyPerUnit) || 0;
+      const inv = dbIngredients.find((i) => i.id === pi.ingredientId);
+      const stock = inv ? Number(inv.stock) : Number(pi.ingredient?.stock || 0);
+      return req > 0 ? Math.floor(stock / req) : 0;
+    });
+
+    const capacity = Math.max(0, Math.min(...limits));
+    if (capacity <= 0) return { capacity: 0, label: "Bahan Baku Habis", isAvailable: false };
+    if (capacity < 15) return { capacity, label: `Menipis (${capacity} Porsi)`, isAvailable: true };
+    return { capacity, label: `${capacity} Porsi Siap`, isAvailable: true };
+  };
+
   const filteredProducts = useMemo(() => {
     if (filterCategory === "all") return dbProducts;
     return dbProducts.filter((p) => (p.category || "").toLowerCase() === filterCategory.toLowerCase());
@@ -342,15 +360,27 @@ export default function PemilikProdukPage() {
                       </td>
 
                       <td className="py-4 px-4">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
-                            prd.isAvailable
-                              ? "bg-[#E8F3EC] text-primary border border-primary/20"
-                              : "bg-[#FDF2F2] text-error border border-error/30"
-                          }`}
-                        >
-                          {prd.isAvailable ? "Tersedia di Kasir" : "Habis"}
-                        </span>
+                        {(() => {
+                          const cap = getPortionCapacity(prd);
+                          return (
+                            <div>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                                  !cap.isAvailable
+                                    ? "bg-[#FDF2F2] text-error border border-error/30"
+                                    : cap.capacity < 15
+                                    ? "bg-[#FFF9E6] text-[#B7791F] border border-[#B7791F]/30"
+                                    : "bg-[#E8F3EC] text-primary border border-primary/20"
+                                }`}
+                              >
+                                {cap.label}
+                              </span>
+                              <div className="text-[11px] text-tertiary mt-0.5">
+                                Terpotong otomatis saat dibeli di Kasir
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       <td className="py-4 px-5 text-right">

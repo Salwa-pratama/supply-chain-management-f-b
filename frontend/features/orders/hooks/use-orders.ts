@@ -31,7 +31,10 @@ export function useCreateOrder(options?: {
     mutationFn: (payload) => createOrderApi(payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders", "stats", "today"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory", "movements"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       if (options?.onSuccess) {
         options.onSuccess(data);

@@ -101,13 +101,39 @@ export default function PosTerminal() {
             p.name.toLowerCase().includes(mp.name.toLowerCase())
         );
         const cat = ((p.category || "minuman").toLowerCase()) as Category;
+
+        const bom = p.productIngredients || [];
+        let realStock = 0;
+        let stockLabel = "Stok Habis";
+
+        if (!p.isAvailable) {
+          realStock = 0;
+          stockLabel = "Nonaktif / Habis";
+        } else if (bom.length > 0) {
+          const maxPortions = bom.map((pi) => {
+            const req = Number(pi.qtyPerUnit) || 0;
+            const avail = Number(pi.ingredient?.stock) || 0;
+            return req > 0 ? Math.floor(avail / req) : 0;
+          });
+          realStock = Math.max(0, Math.min(...maxPortions));
+          stockLabel =
+            realStock <= 0
+              ? "Bahan Habis"
+              : realStock <= 15
+                ? `Menipis (${realStock} Porsi)`
+                : `${realStock} Porsi Siap`;
+        } else {
+          realStock = 50;
+          stockLabel = "Tersedia (Non-BOM)";
+        }
+
         return {
           id: p.id,
           name: p.name,
           desc: p.description || "Menu spesial racikan khas BAPER",
           price: Number(p.price) || 0,
-          stock: 45,
-          stockLabel: "Stok Tersedia",
+          stock: realStock,
+          stockLabel,
           category: cat,
           categoryLabel: p.category ? p.category.charAt(0).toUpperCase() + p.category.slice(1) : "Menu",
           img: matched ? matched.img : PRODUCTS[idx % PRODUCTS.length]?.img || "",

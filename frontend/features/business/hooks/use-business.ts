@@ -1,13 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addBusinessMember,
+  createBusinessBranch,
   fetchAllBusinesses,
+  fetchBusinessBranches,
   fetchBusinessMembers,
   fetchMyBusiness,
   toggleMemberStatus,
+  updateMemberBranch,
   updateMyBusiness,
 } from "../api/business-api";
-import { AddMemberPayload, BusinessData, BusinessMember } from "../types/business.types";
+import {
+  AddMemberPayload,
+  BranchData,
+  BusinessData,
+  BusinessMember,
+  CreateBranchPayload,
+} from "../types/business.types";
 import { ApiError } from "@/lib/api-client";
 
 export function useMyBusiness() {
@@ -24,6 +33,24 @@ export function useAllBusinesses() {
   });
 }
 
+export function useBusinessBranches() {
+  return useQuery<BranchData[], ApiError>({
+    queryKey: ["business", "branches"],
+    queryFn: fetchBusinessBranches,
+  });
+}
+
+export function useCreateBusinessBranch() {
+  const queryClient = useQueryClient();
+  return useMutation<BranchData, ApiError, CreateBranchPayload>({
+    mutationFn: (payload) => createBusinessBranch(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["business", "branches"] });
+      queryClient.invalidateQueries({ queryKey: ["business", "my"] });
+    },
+  });
+}
+
 export function useBusinessMembers() {
   return useQuery<BusinessMember[], ApiError>({
     queryKey: ["business", "members"],
@@ -37,7 +64,21 @@ export function useAddBusinessMember() {
     mutationFn: (payload) => addBusinessMember(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["business", "members"] });
+      queryClient.invalidateQueries({ queryKey: ["business", "branches"] });
       queryClient.invalidateQueries({ queryKey: ["business", "my"] });
+    },
+  });
+}
+
+export function useUpdateMemberBranch() {
+  const queryClient = useQueryClient();
+  return useMutation<BusinessMember, ApiError, { memberId: string; branchId: string | null }>({
+    mutationFn: ({ memberId, branchId }) => updateMemberBranch(memberId, branchId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["business", "members"] });
+      queryClient.invalidateQueries({ queryKey: ["business", "branches"] });
+      queryClient.invalidateQueries({ queryKey: ["business", "my"] });
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     },
   });
 }

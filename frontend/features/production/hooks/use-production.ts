@@ -24,6 +24,9 @@ export function useCreateKitchenBatch() {
     mutationFn: createKitchenBatch,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["production", "batches"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory", "movements"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "owner-overview"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "scm-pipeline"] });
     },
@@ -37,6 +40,9 @@ export function useUpdateKitchenBatchStatus() {
     mutationFn: updateKitchenBatchStatus,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["production", "batches"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory", "movements"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "owner-overview"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", "scm-pipeline"] });
     },

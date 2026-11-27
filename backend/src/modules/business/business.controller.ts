@@ -4,7 +4,7 @@ import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { ServiceResponse } from "../../common/models/service_response";
 import { BusinessService } from "./business.service";
-import { AddMemberDto } from "./dto/add-member.dto";
+import { AddMemberDto, CreateBranchDto, UpdateMemberBranchDto } from "./dto/add-member.dto";
 
 @ApiTags("Business")
 @Controller("business")
@@ -37,6 +37,23 @@ export class BusinessController {
     return ServiceResponse.success("Daftar seluruh bisnis berhasil dimuat", data);
   }
 
+  @Get("branches")
+  @ApiOperation({ summary: "Ambil daftar cabang untuk bisnis aktif" })
+  async getBranches(@CurrentUser("id") userId: string) {
+    const data = await this.businessService.getBranches(userId);
+    return ServiceResponse.success("Daftar cabang berhasil dimuat", data);
+  }
+
+  @Post("branches")
+  @ApiOperation({ summary: "Tambah cabang baru ke bisnis aktif" })
+  async createBranch(
+    @CurrentUser("id") userId: string,
+    @Body() dto: CreateBranchDto,
+  ) {
+    const data = await this.businessService.createBranch(userId, dto);
+    return ServiceResponse.success("Cabang baru berhasil ditambahkan", data, 201);
+  }
+
   @Get("members")
   @ApiOperation({ summary: "Ambil seluruh staf (kasir & gudang) untuk bisnis aktif" })
   async getMembers(@CurrentUser("id") userId: string) {
@@ -52,6 +69,17 @@ export class BusinessController {
   ) {
     const data = await this.businessService.addMember(userId, dto);
     return ServiceResponse.success("Staf baru berhasil ditambahkan", data, 201);
+  }
+
+  @Patch("members/:id/branch")
+  @ApiOperation({ summary: "Ubah cabang penugasan staf" })
+  async updateMemberBranch(
+    @CurrentUser("id") userId: string,
+    @Param("id") memberId: string,
+    @Body() dto: UpdateMemberBranchDto,
+  ) {
+    const data = await this.businessService.updateMemberBranch(userId, memberId, dto.branchId);
+    return ServiceResponse.success("Cabang penugasan staf berhasil diperbarui", data);
   }
 
   @Patch("members/:id/toggle")

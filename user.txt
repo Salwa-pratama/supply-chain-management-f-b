@@ -12,7 +12,7 @@ pw : Gudang#2025
 
 
 KASIR :
-email : kasir1@baperfnb.com
+email : kasir@baperfnb.com
 pw : Kasir#2025
 
 MITRA PEMASOK

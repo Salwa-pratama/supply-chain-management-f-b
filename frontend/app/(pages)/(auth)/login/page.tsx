@@ -399,13 +399,13 @@ export default function LoginPage() {
               </button>
 
               {/* Pemisah */}
-              <div className="relative py-2 flex items-center justify-center">
+              {/* <div className="relative py-2 flex items-center justify-center">
                 <div className="w-full border-t border-slate-200" />
                 <span className="absolute bg-white px-3 font-body-sm text-body-sm text-[#7B8794]">atau</span>
-              </div>
+              </div> */}
 
               {/* Login Google */}
-              <button
+              {/* <button
                 type="button"
                 className="w-full h-12 bg-white hover:bg-[#E8F3EC]/50 border border-[#94B9A9] text-[#172033] font-label-lg text-label-lg rounded-[16px] flex items-center justify-center gap-3 transition duration-150 active:scale-[0.99] focus:outline-none"
               >
@@ -428,7 +428,7 @@ export default function LoginPage() {
                   />
                 </svg>
                 <span>Masuk dengan Google</span>
-              </button>
+              </button> */}
             </form>
 
             {/* Footer kartu */}

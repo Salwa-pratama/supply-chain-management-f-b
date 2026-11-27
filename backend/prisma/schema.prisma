@@ -62,6 +62,7 @@ model Business {
 
   // Relations
   owner             User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  branches          Branch[]
   members           BusinessMember[]
   customers         Customer[]
   products          Product[]
@@ -76,9 +77,29 @@ model Business {
   @@map("businesses")
 }
 
+model Branch {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  name       String
+  code       String?
+  address    String?  @db.Text
+  phone      String?
+  isMain     Boolean  @default(false) @map("is_main")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  members  BusinessMember[]
+
+  @@index([businessId])
+  @@map("branches")
+}
+
 model BusinessMember {
   id         String   @id @default(uuid())
   businessId String   @map("business_id")
+  branchId   String?  @map("branch_id")
   userId     String   @map("user_id")
   role       String // manajer_gudang, kasir
   isActive   Boolean  @default(true) @map("is_active")
@@ -86,10 +107,12 @@ model BusinessMember {
 
   // Relations
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branch   Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, userId])
   @@index([userId])
+  @@index([branchId])
   @@map("business_members")
 }
 
@@ -130,6 +153,7 @@ model Product {
   business           Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
   orderItems         OrderItem[]
   productIngredients ProductIngredient[]
+  kitchenBatches     KitchenBatch[]
 
   @@index([businessId])
   @@map("products")
@@ -349,11 +373,13 @@ model PurchaseOrderItem {
 model KitchenBatch {
   id           String    @id @default(uuid())
   businessId   String    @map("business_id")
+  productId    String?   @map("product_id")
   createdById  String?   @map("created_by_id")
   batchNumber  String    @map("batch_number") // BATCH-20261119-01
   recipeName   String    @map("recipe_name")   // Cold Brew Extraction Concentrate (30L)
   station      String?   // Central Bar Extraction, Bakery Oven Station
   operator     String?   // Fahmi Nugraha (Barista Lead)
+  targetQty    Int?      @map("target_qty")    // Target porsi produk kasir
   plannedYield String?   @map("planned_yield") // 120 Porsi Cold Brew
   actualYield  String?   @map("actual_yield")
   progress     Int       @default(0)           // 0 - 100
@@ -364,10 +390,12 @@ model KitchenBatch {
 
   // Relations
   business  Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product   Product?           @relation(fields: [productId], references: [id], onDelete: SetNull)
   createdBy User?              @relation("BatchCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   items     KitchenBatchItem[]
 
   @@index([businessId])
+  @@index([productId])
   @@index([createdById])
   @@map("kitchen_batches")
 }

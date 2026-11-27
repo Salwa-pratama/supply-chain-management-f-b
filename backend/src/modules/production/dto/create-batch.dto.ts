@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsArray, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 
 export class BatchItemDto {
@@ -22,7 +22,18 @@ export class BatchItemDto {
 }
 
 export class CreateBatchDto {
-  @ApiProperty({ example: "Cold Brew Extraction Concentrate (30L)" })
+  @ApiPropertyOptional({ example: "product-uuid", description: "ID produk menu kasir yang diproduksi" })
+  @IsOptional()
+  @IsString()
+  productId?: string;
+
+  @ApiPropertyOptional({ example: 30, description: "Target jumlah porsi produk" })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  targetQty?: number;
+
+  @ApiProperty({ example: "Produksi Kopi Kenangan Mantan (Aren Latte)" })
   @IsString()
   recipeName!: string;
 
@@ -36,7 +47,7 @@ export class CreateBatchDto {
   @IsString()
   operator?: string;
 
-  @ApiPropertyOptional({ example: "120 Porsi Cold Brew" })
+  @ApiPropertyOptional({ example: "60 Porsi Aren Latte" })
   @IsOptional()
   @IsString()
   plannedYield?: string;
@@ -45,6 +56,14 @@ export class CreateBatchDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: "Jika true, stok bahan baku gudang langsung dipotong saat batch dibuat",
+  })
+  @IsOptional()
+  @IsBoolean()
+  deductIngredients?: boolean;
 
   @ApiPropertyOptional({ type: [BatchItemDto] })
   @IsOptional()

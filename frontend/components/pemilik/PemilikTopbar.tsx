@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { getNameInitials, useActiveUserProfile } from "@/features/auth/hooks/use-auth-user";
+import { useBusinessBranches } from "@/features/business/hooks/use-business";
 
-const BRANCHES = [
+const FALLBACK_BRANCHES = [
   {
     id: "senopati",
-    name: "Kopi Kenangan Senopati",
+    name: "Kopi Kenangan Senopati #04",
     meta: "Cabang Utama #04",
   },
-  { id: "scbd", name: "Kopi Kenangan SCBD", meta: "Cabang #07" },
-  { id: "kemang", name: "Kopi Kenangan Kemang", meta: "Cabang #11" },
-  { id: "all", name: "Semua Cabang", meta: "Konsolidasi Laporan" },
+  { id: "scbd", name: "Kopi Kenangan SCBD #07", meta: "Cabang #07" },
+  { id: "kemang", name: "Kopi Kenangan Kemang #11", meta: "Cabang #11" },
 ];
 
 const BRANCH_STORAGE_KEY = "baper.branch.v1";
@@ -47,7 +48,25 @@ const HELP_STEPS = [
 
 export default function PemilikTopbar() {
   const toast = useToast();
-  const [branchId, setBranchId] = useState(BRANCHES[0].id);
+  const activeUser = useActiveUserProfile();
+  const { data: apiBranches = [] } = useBusinessBranches();
+
+  const branches = useMemo(() => {
+    const base =
+      apiBranches.length > 0
+        ? apiBranches.map((b) => ({
+            id: b.id,
+            name: b.name,
+            meta: b.code || (b.isMain ? "Cabang Utama" : "Cabang Outlet"),
+          }))
+        : FALLBACK_BRANCHES;
+    return [
+      ...base,
+      { id: "all", name: "Semua Cabang", meta: "Konsolidasi Laporan" },
+    ];
+  }, [apiBranches]);
+
+  const [branchId, setBranchId] = useState(branches[0].id);
   const [branchOpen, setBranchOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const branchRef = useRef<HTMLDivElement>(null);
@@ -55,14 +74,18 @@ export default function PemilikTopbar() {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(BRANCH_STORAGE_KEY);
-      if (saved && BRANCHES.some((branch) => branch.id === saved)) {
+      if (saved && branches.some((branch) => branch.id === saved)) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setBranchId(saved);
+        return;
       }
     } catch {
       // localStorage bisa diblokir; gunakan default.
     }
-  }, []);
+    if (branches.length > 0 && !branches.some((b) => b.id === branchId)) {
+      setBranchId(branches[0].id);
+    }
+  }, [branches, branchId]);
 
   useEffect(() => {
     if (!branchOpen) return;
@@ -92,10 +115,10 @@ export default function PemilikTopbar() {
   }, [helpOpen]);
 
   const activeBranch =
-    BRANCHES.find((branch) => branch.id === branchId) ?? BRANCHES[0];
+    branches.find((branch) => branch.id === branchId) ?? branches[0];
 
   const handleSelectBranch = (nextId: string) => {
-    const next = BRANCHES.find((branch) => branch.id === nextId);
+    const next = branches.find((branch) => branch.id === nextId);
     if (!next) return;
 
     setBranchId(nextId);
@@ -166,8 +189,8 @@ export default function PemilikTopbar() {
                     Data dashboard mengikuti cabang yang dipilih.
                   </p>
                 </div>
-                {BRANCHES.map((branch) => {
-                  const active = branch.id === branchId;
+                {branches.map((branch) => {
+                  const active = branch.id === activeBranch.id;
                   return (
                     <button
                       key={branch.id}
@@ -247,14 +270,14 @@ export default function PemilikTopbar() {
           {/* Profile Section */}
           <div className="flex items-center gap-3 pl-3 border-l border-outline-variant/40">
             <div className="w-9 h-9 rounded-full bg-secondary-container border border-primary/20 flex items-center justify-center text-primary font-bold text-label-md">
-              KK
+              {getNameInitials(activeUser?.name, "BS")}
             </div>
             <div className="flex flex-col text-left">
               <span className="text-label-md font-label-md text-on-surface leading-tight">
-                Budi Hartono
+                {activeUser?.name || "Budi Santoso"}
               </span>
               <span className="text-label-sm font-label-sm text-tertiary leading-tight">
-                Store Manager
+                Pemilik Bisnis
               </span>
             </div>
           </div>

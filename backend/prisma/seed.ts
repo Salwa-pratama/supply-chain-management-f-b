@@ -45,6 +45,7 @@ async function main() {
   await prisma.businessSupplier.deleteMany();
   await prisma.supplier.deleteMany();
   await prisma.businessMember.deleteMany();
+  await prisma.branch.deleteMany();
   await prisma.business.deleteMany();
   await prisma.authToken.deleteMany();
   await prisma.user.deleteMany();
@@ -186,11 +187,59 @@ async function main() {
     },
   });
 
-  // Tautkan staf ke bisnis
+  // 4b. Buat Daftar Cabang (Branches) untuk Bisnis F&B
+  const branchSenopati = await prisma.branch.create({
+    data: {
+      businessId: business.id,
+      name: "Kopi Kenangan Senopati #04",
+      code: "Cabang Utama #04",
+      address: "Jl. Senopati No. 42, Kebayoran Baru, Jakarta Selatan",
+      phone: "081234567890",
+      isMain: true,
+      isActive: true,
+    },
+  });
+
+  await prisma.branch.createMany({
+    data: [
+      {
+        businessId: business.id,
+        name: "Kopi Kenangan SCBD #07",
+        code: "Cabang #07",
+        address: "SCBD Lot 8, Jl. Jend. Sudirman, Jakarta Selatan",
+        phone: "081234567891",
+        isMain: false,
+        isActive: true,
+      },
+      {
+        businessId: business.id,
+        name: "Kopi Kenangan Kemang #11",
+        code: "Cabang #11",
+        address: "Jl. Kemang Raya No. 18, Mampang Prapatan, Jakarta Selatan",
+        phone: "081234567892",
+        isMain: false,
+        isActive: true,
+      },
+    ],
+  });
+
+  // Tautkan staf ke bisnis & cabang penugasan
   await prisma.businessMember.createMany({
     data: [
-      { businessId: business.id, userId: gudangUser.id, role: "manajer_gudang", isActive: true },
-      { businessId: business.id, userId: kasirUser.id, role: "kasir", isActive: true },
+      {
+        businessId: business.id,
+        branchId: branchSenopati.id,
+        userId: gudangUser.id,
+        role: "manajer_gudang",
+        isActive: true,
+      },
+      {
+        businessId: business.id,
+        branchId: branchSenopati.id,
+        userId: kasirUser.id,
+        role: "kasir",
+        isActive: true,
+      },
     ],
   });
 
@@ -276,7 +325,35 @@ async function main() {
     },
   });
 
-  console.log("📦 5 Bahan Baku Gudang berhasil dibuat.");
+  const ingRoti = await prisma.ingredient.create({
+    data: {
+      businessId: business.id,
+      preferredSupplierId: supplier.id,
+      name: "Roti Brioche Tawar",
+      unit: "pcs",
+      stock: 120,
+      minStock: 30,
+      category: "bakery",
+      locationRack: "RAK-E1-01",
+      expiryDate: new Date(Date.now() + 5 * 864e5),
+    },
+  });
+
+  const ingCokelat = await prisma.ingredient.create({
+    data: {
+      businessId: business.id,
+      preferredSupplierId: supplier.id,
+      name: "Pasta Cokelat Crunchy",
+      unit: "gram",
+      stock: 5000,
+      minStock: 1000,
+      category: "flavor",
+      locationRack: "RAK-C3-03",
+      expiryDate: new Date(Date.now() + 90 * 864e5),
+    },
+  });
+
+  console.log("📦 7 Bahan Baku Gudang berhasil dibuat.");
 
   // 6. Buat Produk Menu & Resep / BOM (Bill of Materials)
   const prodMantan = await prisma.product.create({
@@ -351,11 +428,16 @@ async function main() {
       { productId: prodCaramel.id, ingredientId: ingSusu.id, qtyPerUnit: 150 },
       { productId: prodCaramel.id, ingredientId: ingSirup.id, qtyPerUnit: 20 },
       { productId: prodCaramel.id, ingredientId: ingCup.id, qtyPerUnit: 1 },
+      // Roti Toast Cokelat Crunchy
+      { productId: prodToast.id, ingredientId: ingRoti.id, qtyPerUnit: 1 },
+      { productId: prodToast.id, ingredientId: ingCokelat.id, qtyPerUnit: 30 },
       // Paket Hemat
       { productId: prodPaket.id, ingredientId: ingKopi.id, qtyPerUnit: 18 },
       { productId: prodPaket.id, ingredientId: ingSusu.id, qtyPerUnit: 150 },
       { productId: prodPaket.id, ingredientId: ingAren.id, qtyPerUnit: 25 },
       { productId: prodPaket.id, ingredientId: ingCup.id, qtyPerUnit: 1 },
+      { productId: prodPaket.id, ingredientId: ingRoti.id, qtyPerUnit: 1 },
+      { productId: prodPaket.id, ingredientId: ingCokelat.id, qtyPerUnit: 30 },
     ],
   });
 
@@ -561,24 +643,76 @@ async function main() {
 
   console.log("💰 Transaksi Kasir awal berhasil dibuat.");
 
-  // 12. Batch Produksi Kitchen
+  // Catat pemotongan bahan baku otomatis untuk transaksi awal
+  const seededOrders = [order1, order2, order3, order4, order5];
+  for (const ord of seededOrders) {
+    const fullOrder = await prisma.order.findUnique({
+      where: { id: ord.id },
+      include: {
+        orderItems: {
+          include: {
+            product: {
+              include: {
+                productIngredients: { include: { ingredient: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (fullOrder) {
+      for (const item of fullOrder.orderItems) {
+        for (const recipe of item.product.productIngredients) {
+          const usage = Number(recipe.qtyPerUnit) * item.quantity;
+          if (usage > 0) {
+            await prisma.ingredient.update({
+              where: { id: recipe.ingredientId },
+              data: { stock: { decrement: usage } },
+            });
+            await prisma.stockMovement.create({
+              data: {
+                ingredientId: recipe.ingredientId,
+                createdById: ord.createdById,
+                type: "out",
+                qty: usage,
+                referenceId: `ORDER: ${ord.id.slice(0, 8)} (${item.quantity}x ${item.product.name})`,
+                createdAt: ord.createdAt,
+              },
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Setel status pesanan kitchen: sebagian sudah keluar/selesai, sebagian sedang diracik/siap
+  await prisma.order.update({ where: { id: order1.id }, data: { status: "completed" } });
+  await prisma.order.update({ where: { id: order2.id }, data: { status: "completed" } });
+  await prisma.order.update({ where: { id: order3.id }, data: { status: "preparing" } });
+
+  // 12. Batch Produksi Kitchen (terhubung ke Produk Menu Kasir)
   await prisma.kitchenBatch.create({
     data: {
       businessId: business.id,
+      productId: prodMantan.id,
       createdById: gudangUser.id,
       batchNumber: "BATCH-20261119-01",
-      recipeName: "Cold Brew Extraction Concentrate (30L)",
+      recipeName: "Produksi Kopi Kenangan Mantan (Aren Latte)",
       station: "Central Bar Extraction",
       operator: "Fahmi Nugraha (Barista Lead)",
-      plannedYield: "120 Porsi Cold Brew",
-      actualYield: "118 Porsi",
+      targetQty: 60,
+      plannedYield: "60 Porsi Aren Latte",
+      actualYield: "58 Porsi",
       progress: 75,
       status: "in_progress",
-      notes: "Steeping 14 Jam dengan suhu air 4°C di Chiller B2",
+      notes: "Persiapan base espresso & aren latte untuk shift kasir utama",
       items: {
         create: [
-          { name: "Biji Kopi Arabika Lintong", quantity: 3.5, unit: "kg", ingredientId: ingKopi.id },
-          { name: "Air Filtrasi UV Mineral", quantity: 30, unit: "liter" },
+          { name: "Biji Kopi Arabika Lintong", quantity: 1080, unit: "gram", ingredientId: ingKopi.id },
+          { name: "Fresh Milk Pasteurisasi", quantity: 9000, unit: "ml", ingredientId: ingSusu.id },
+          { name: "Gula Aren Cair Organik", quantity: 1500, unit: "ml", ingredientId: ingAren.id },
+          { name: "Paper Cup 12oz BAPER", quantity: 60, unit: "pcs", ingredientId: ingCup.id },
         ],
       },
     },
@@ -587,21 +721,23 @@ async function main() {
   await prisma.kitchenBatch.create({
     data: {
       businessId: business.id,
+      productId: prodToast.id,
       createdById: owner.id,
       batchNumber: "BATCH-20261119-02",
-      recipeName: "Pandan Simple Syrup Concentrate (10L)",
-      station: "Kitchen Syrups & Sauces",
+      recipeName: "Produksi Roti Toast Cokelat Crunchy",
+      station: "Bakery Oven Station",
       operator: "Dewi Lestari (Kitchen Staff)",
-      plannedYield: "10 Botol @ 1 Liter",
-      actualYield: "10 Botol @ 1 Liter",
+      targetQty: 30,
+      plannedYield: "30 Porsi Roti Toast",
+      actualYield: "30 Porsi Roti Toast",
       progress: 100,
       status: "completed",
-      notes: "Lolos QC Rasa & Brix Kemanisan 62%",
+      notes: "Lolos QC Tekstur & Kematangan Panggang",
       completedAt: new Date(Date.now() - 7200 * 1000),
       items: {
         create: [
-          { name: "Gula Aren Organik Cair", quantity: 5, unit: "liter", ingredientId: ingAren.id },
-          { name: "Ekstrak Pandan Segar Alami", quantity: 200, unit: "gram" },
+          { name: "Roti Brioche Tawar", quantity: 30, unit: "pcs", ingredientId: ingRoti.id },
+          { name: "Pasta Cokelat Crunchy", quantity: 900, unit: "gram", ingredientId: ingCokelat.id },
         ],
       },
     },

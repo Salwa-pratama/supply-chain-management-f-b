@@ -62,7 +62,7 @@ export class AuthService {
 
         const contactPhone = dto.phone || dto.whatsapp || null;
 
-        // 2. Jika Owner F&B: Otomatis buat entitas Business
+        // 2. Jika Owner F&B: Otomatis buat entitas Business & Cabang Utama
         if (assignedRole === 'owner') {
           businessData = await tx.business.create({
             data: {
@@ -70,6 +70,17 @@ export class AuthService {
               name: businessTitle,
               category: dto.category || null,
               phoneBusiness: contactPhone,
+            },
+          });
+
+          await tx.branch.create({
+            data: {
+              businessId: businessData.id,
+              name: businessTitle,
+              code: 'Cabang Utama #01',
+              phone: contactPhone,
+              isMain: true,
+              isActive: true,
             },
           });
         }
@@ -262,7 +273,8 @@ export class AuthService {
     };
   }
 
-  async getProfile(userId: string) {    const user = await this.prisma.user.findUnique({
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -271,6 +283,17 @@ export class AuthService {
         role: true,
         isActive: true,
         createdAt: true,
+        businessMembers: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            businessId: true,
+            branchId: true,
+            role: true,
+            business: { select: { id: true, name: true } },
+            branch: { select: { id: true, name: true, code: true, address: true } },
+          },
+        },
       },
     });
 

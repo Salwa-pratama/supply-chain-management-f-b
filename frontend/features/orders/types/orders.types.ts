@@ -1,3 +1,15 @@
+export interface OrderItemIngredient {
+  id: string;
+  ingredientId: string;
+  qtyPerUnit: string | number;
+  ingredient?: {
+    id: string;
+    name: string;
+    unit: string;
+    stock: string | number;
+  } | null;
+}
+
 export interface OrderLineItem {
   id: string;
   orderId: string;
@@ -8,6 +20,8 @@ export interface OrderLineItem {
     id: string;
     name: string;
     category?: string | null;
+    price?: string | number;
+    productIngredients?: OrderItemIngredient[];
   };
 }
 

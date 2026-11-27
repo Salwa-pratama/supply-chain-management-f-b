@@ -20,6 +20,23 @@ const ALLOWED_TRANSITIONS: Record<string, OrderStatus[]> = {
   cancelled: [],
 };
 
+const ORDER_INCLUDE = {
+  orderItems: {
+    include: {
+      product: {
+        include: {
+          productIngredients: {
+            include: { ingredient: true },
+          },
+        },
+      },
+    },
+  },
+  createdBy: {
+    select: { id: true, name: true, role: true },
+  },
+};
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -32,14 +49,7 @@ export class OrdersService {
 
     return this.prisma.order.findMany({
       where: { businessId },
-      include: {
-        orderItems: {
-          include: { product: true },
-        },
-        createdBy: {
-          select: { id: true, name: true, role: true },
-        },
-      },
+      include: ORDER_INCLUDE,
       orderBy: { createdAt: "desc" },
     });
   }
@@ -49,14 +59,7 @@ export class OrdersService {
 
     const order = await this.prisma.order.findFirst({
       where: { id, businessId },
-      include: {
-        orderItems: {
-          include: { product: true },
-        },
-        createdBy: {
-          select: { id: true, name: true, role: true },
-        },
-      },
+      include: ORDER_INCLUDE,
     });
 
     if (!order) {
@@ -75,6 +78,9 @@ export class OrdersService {
 
     const order = await this.prisma.order.findFirst({
       where: { id, businessId },
+      include: {
+        orderItems: true,
+      },
     });
 
     if (!order) {
@@ -92,12 +98,110 @@ export class OrdersService {
       );
     }
 
-    await this.prisma.order.update({
-      where: { id: order.id },
-      data: { status },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Jika berpindah dari pending -> paid/completed: potong bahan baku
+      if (order.status === "pending" && (status === "paid" || status === "completed")) {
+        const usageMap = new Map<
+          string,
+          { ingredientName: string; unit: string; currentStock: number; usage: number }
+        >();
 
-    return this.findOne(id, userId);
+        for (const item of order.orderItems) {
+          const recipes = await tx.productIngredient.findMany({
+            where: { productId: item.productId, product: { businessId } },
+            include: { ingredient: true },
+          });
+
+          for (const recipe of recipes) {
+            const usage = Number(recipe.qtyPerUnit) * item.quantity;
+            if (usage <= 0) continue;
+
+            const existing = usageMap.get(recipe.ingredientId);
+            if (existing) {
+              existing.usage += usage;
+            } else {
+              usageMap.set(recipe.ingredientId, {
+                ingredientName: recipe.ingredient.name,
+                unit: recipe.ingredient.unit,
+                currentStock: Number(recipe.ingredient.stock),
+                usage,
+              });
+            }
+          }
+        }
+
+        for (const [ingredientId, entry] of usageMap.entries()) {
+          if (entry.currentStock < entry.usage) {
+            throw new BadRequestException(
+              `Stok bahan baku "${entry.ingredientName}" tidak mencukupi (tersedia ${entry.currentStock} ${entry.unit}, dibutuhkan ${entry.usage} ${entry.unit}).`
+            );
+          }
+
+          await tx.ingredient.update({
+            where: { id: ingredientId },
+            data: {
+              stock: {
+                decrement: entry.usage,
+              },
+            },
+          });
+
+          await tx.stockMovement.create({
+            data: {
+              ingredientId,
+              createdById: userId,
+              type: "out",
+              qty: entry.usage,
+              referenceId: `ORDER: ${order.id.slice(0, 8)}`,
+            },
+          });
+        }
+      }
+
+      // 2. Jika dibatalkan dari status paid/preparing: kembalikan stok bahan baku
+      if ((order.status === "paid" || order.status === "preparing") && status === "cancelled") {
+        for (const item of order.orderItems) {
+          const recipes = await tx.productIngredient.findMany({
+            where: { productId: item.productId, product: { businessId } },
+            include: { ingredient: true },
+          });
+
+          for (const recipe of recipes) {
+            const usage = Number(recipe.qtyPerUnit) * item.quantity;
+            if (usage <= 0) continue;
+
+            await tx.ingredient.update({
+              where: { id: recipe.ingredientId },
+              data: {
+                stock: {
+                  increment: usage,
+                },
+              },
+            });
+
+            await tx.stockMovement.create({
+              data: {
+                ingredientId: recipe.ingredientId,
+                createdById: userId,
+                type: "in",
+                qty: usage,
+                referenceId: `CANCEL_ORDER: ${order.id.slice(0, 8)}`,
+              },
+            });
+          }
+        }
+      }
+
+      await tx.order.update({
+        where: { id: order.id },
+        data: { status },
+      });
+
+      return tx.order.findUnique({
+        where: { id: order.id },
+        include: ORDER_INCLUDE,
+      });
+    });
   }
 
   /**
@@ -142,53 +246,69 @@ export class OrdersService {
         })),
       });
 
-      // 3. JIKA STATUS 'PAID': Jalankan Pemotongan Bahan Baku Otomatis
+      // 3. JIKA STATUS 'PAID': Jalankan Validasi & Pemotongan Bahan Baku Otomatis berdasarkan BOM
       if (orderStatus === "paid" || orderStatus === "completed") {
+        const usageMap = new Map<
+          string,
+          { ingredientName: string; unit: string; currentStock: number; usage: number }
+        >();
+
         for (const item of dto.items) {
-          // Ambil resep produk ini
           const recipes = await tx.productIngredient.findMany({
-            where: { productId: item.productId },
+            where: { productId: item.productId, product: { businessId } },
             include: { ingredient: true },
           });
 
           for (const recipe of recipes) {
             const usage = Number(recipe.qtyPerUnit) * item.quantity;
+            if (usage <= 0) continue;
 
-            // Kurangi stok bahan di gudang
-            await tx.ingredient.update({
-              where: { id: recipe.ingredientId },
-              data: {
-                stock: {
-                  decrement: usage,
-                },
-              },
-            });
-
-            // Catat riwayat pergerakan stok (out)
-            await tx.stockMovement.create({
-              data: {
-                ingredientId: recipe.ingredientId,
-                createdById: userId,
-                type: "out",
-                qty: usage,
-                referenceId: `ORDER: ${order.id.slice(0, 8)}`,
-              },
-            });
+            const existing = usageMap.get(recipe.ingredientId);
+            if (existing) {
+              existing.usage += usage;
+            } else {
+              usageMap.set(recipe.ingredientId, {
+                ingredientName: recipe.ingredient.name,
+                unit: recipe.ingredient.unit,
+                currentStock: Number(recipe.ingredient.stock),
+                usage,
+              });
+            }
           }
+        }
+
+        for (const [ingredientId, entry] of usageMap.entries()) {
+          if (entry.currentStock < entry.usage) {
+            throw new BadRequestException(
+              `Stok bahan baku "${entry.ingredientName}" tidak mencukupi (tersedia ${entry.currentStock} ${entry.unit}, dibutuhkan ${entry.usage} ${entry.unit}).`
+            );
+          }
+
+          await tx.ingredient.update({
+            where: { id: ingredientId },
+            data: {
+              stock: {
+                decrement: entry.usage,
+              },
+            },
+          });
+
+          await tx.stockMovement.create({
+            data: {
+              ingredientId,
+              createdById: userId,
+              type: "out",
+              qty: entry.usage,
+              referenceId: `ORDER: ${order.id.slice(0, 8)}`,
+            },
+          });
         }
       }
 
-      // Return order lengkap dengan item
+      // Return order lengkap dengan item dan resep BOM
       return tx.order.findUnique({
         where: { id: order.id },
-        include: {
-          orderItems: {
-            include: { product: true },
-          },
-          createdBy: {
-            select: { id: true, name: true },
-          },
-        },
+        include: ORDER_INCLUDE,
       });
     });
   }

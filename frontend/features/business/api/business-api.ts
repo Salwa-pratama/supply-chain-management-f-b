@@ -1,5 +1,11 @@
 import { apiClient } from "@/lib/api-client";
-import { AddMemberPayload, BusinessData, BusinessMember } from "../types/business.types";
+import {
+  AddMemberPayload,
+  BranchData,
+  BusinessData,
+  BusinessMember,
+  CreateBranchPayload,
+} from "../types/business.types";
 
 export async function fetchMyBusiness(): Promise<BusinessData> {
   return apiClient<BusinessData>("/business/my");
@@ -7,6 +13,17 @@ export async function fetchMyBusiness(): Promise<BusinessData> {
 
 export async function fetchAllBusinesses(): Promise<BusinessData[]> {
   return apiClient<BusinessData[]>("/business/all");
+}
+
+export async function fetchBusinessBranches(): Promise<BranchData[]> {
+  return apiClient<BranchData[]>("/business/branches");
+}
+
+export async function createBusinessBranch(payload: CreateBranchPayload): Promise<BranchData> {
+  return apiClient<BranchData>("/business/branches", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function fetchBusinessMembers(): Promise<BusinessMember[]> {
@@ -17,6 +34,16 @@ export async function addBusinessMember(payload: AddMemberPayload): Promise<Busi
   return apiClient<BusinessMember>("/business/members", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function updateMemberBranch(
+  memberId: string,
+  branchId: string | null
+): Promise<BusinessMember> {
+  return apiClient<BusinessMember>(`/business/members/${memberId}/branch`, {
+    method: "PATCH",
+    body: JSON.stringify({ branchId }),
   });
 }
 

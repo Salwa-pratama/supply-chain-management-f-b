@@ -1,5 +1,14 @@
 export type UserRole = "owner" | "pemasok" | "kasir" | "manajer_gudang";
 
+export interface UserMembershipSummary {
+  id: string;
+  businessId: string;
+  branchId?: string | null;
+  role: string;
+  business?: { id: string; name: string } | null;
+  branch?: { id: string; name: string; code?: string | null; address?: string | null } | null;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -7,6 +16,7 @@ export interface UserProfile {
   role: UserRole | string;
   isActive: boolean;
   createdAt: string;
+  businessMembers?: UserMembershipSummary[];
 }
 
 export interface BusinessProfile {
